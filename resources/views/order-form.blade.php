@@ -25,37 +25,38 @@
             background: var(--bg);
             color: var(--dark);
             min-height: 100vh;
+            font-size: 14px;
         }
         header {
-            padding: 26px 30px 10px;
+            padding: 18px 22px 8px;
         }
-        h1 { margin: 0; font-size: 36px; letter-spacing: -0.3px; }
-        .lead { margin: 6px 0 0 0; color: var(--muted); font-weight: 600; }
+        h1 { margin: 0; font-size: 26px; letter-spacing: -0.2px; }
+        .lead { margin: 4px 0 0 0; color: var(--muted); font-weight: 600; font-size: 13px; }
         .layout {
             max-width: 1200px;
-            margin: 0 auto 50px;
-            padding: 0 20px 40px;
+            margin: 0 auto 28px;
+            padding: 0 14px 20px;
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 22px;
+            gap: 14px;
         }
         .card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px;
-            box-shadow: 0 18px 40px rgba(17, 42, 72, 0.08);
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 12px 28px rgba(17, 42, 72, 0.07);
         }
-        .form-grid { display: grid; gap: 16px; }
-        label { font-weight: 800; margin-bottom: 8px; display: block; color: #2c2f33; }
+        .form-grid { display: grid; gap: 12px; }
+        label { font-weight: 800; margin-bottom: 6px; display: block; color: #2c2f33; font-size: 13px; }
         select, input, textarea {
             width: 100%;
-            padding: 13px 12px;
+            padding: 10px 10px;
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 9px;
             background: #fdfefe;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
             outline: none;
             transition: border .12s ease, box-shadow .12s ease;
         }
@@ -63,18 +64,19 @@
             border-color: var(--green);
             box-shadow: 0 0 0 3px rgba(15, 89, 81, 0.12);
         }
-        textarea { min-height: 140px; resize: vertical; }
+        textarea { min-height: 110px; resize: vertical; }
         .choices {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
         }
         .pill {
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 14px;
+            border-radius: 9px;
+            padding: 9px 10px;
             text-align: center;
             font-weight: 800;
+            font-size: 13px;
             cursor: pointer;
             background: #f5f7f8;
             transition: all .12s ease;
@@ -84,23 +86,23 @@
             color: #fff;
             border-color: var(--green);
         }
-        .flex-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: center; }
-        .quantity { display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; }
+        .flex-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: center; }
+        .quantity { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
         .quantity button {
-            height: 44px;
+            height: 36px;
             border: 1px solid var(--border);
             background: #fff;
             font-weight: 900;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
         }
         .quantity input { text-align: center; font-weight: 800; }
         .btn {
             border: none;
-            border-radius: 12px;
-            padding: 14px 16px;
+            border-radius: 10px;
+            padding: 10px 12px;
             font-weight: 900;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             transition: transform .1s ease, box-shadow .15s ease;
         }
@@ -108,16 +110,16 @@
         .btn-green {
             background: var(--green);
             color: #fff;
-            box-shadow: 0 14px 30px rgba(15, 89, 81, 0.3);
+            box-shadow: 0 10px 22px rgba(15, 89, 81, 0.25);
             width: 100%;
         }
         .coupon {
             background: #ffa400;
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 10px;
             display: grid;
-            grid-template-columns: 1fr 140px;
-            gap: 10px;
+            grid-template-columns: 1fr 120px;
+            gap: 8px;
             align-items: center;
         }
         .coupon input {
@@ -128,28 +130,29 @@
             background: #fff;
             color: #d17a00;
             border: none;
-            height: 44px;
-            border-radius: 10px;
+            height: 36px;
+            border-radius: 9px;
             font-weight: 900;
             cursor: pointer;
         }
         .sidebar {
             position: sticky;
-            top: 20px;
+            top: 14px;
             display: grid;
-            gap: 12px;
+            gap: 8px;
         }
-        .summary-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
-        .summary-label { color: var(--muted); font-weight: 700; }
-        .summary-value { font-weight: 800; color: var(--dark); }
+        .summary-row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0; }
+        .summary-label { color: var(--muted); font-weight: 700; font-size: 13px; }
+        .summary-value { font-weight: 800; color: var(--dark); font-size: 13px; }
         .total {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 900;
             color: var(--green);
         }
-        .cards { display: flex; gap: 10px; flex-wrap: wrap; }
-        .cards img { height: 26px; }
-        .section-title { font-weight: 900; margin: 10px 0 4px; }
+        .cards { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cards img { height: 22px; }
+        .section-title { font-weight: 900; margin: 6px 0 2px; font-size: 14px; }
+        .helper { color: var(--muted); font-weight: 600; font-size: 12px; margin-top: 4px; }
         @media (max-width: 950px) {
             .layout { grid-template-columns: 1fr; }
             .sidebar { position: static; }
