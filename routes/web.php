@@ -169,7 +169,9 @@ Route::get('/order', function () {
 })->name('order');
 
 Route::get('/order/create', function () {
-    return view('order-form');
+    return view('order-form', [
+        'pricing' => loadPricing(),
+    ]);
 })->name('order.create');
 
 Route::post('/customer/register', function (\Illuminate\Http\Request $request) {

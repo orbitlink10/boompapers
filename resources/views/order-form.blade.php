@@ -339,11 +339,12 @@
         <aside class="sidebar">
             <div class="card">
                 <div class="section-title">Summary</div>
-                <div class="summary-row"><span class="summary-label">Level</span><span class="summary-value">College</span></div>
-                <div class="summary-row"><span class="summary-label">Type</span><span class="summary-value">Essay (Any)</span></div>
-                <div class="summary-row"><span class="summary-label">Pages</span><span class="summary-value">1 page x $21.60</span></div>
+                <div class="summary-row"><span class="summary-label">Level</span><span id="summaryLevel" class="summary-value">High School</span></div>
+                <div class="summary-row"><span class="summary-label">Type</span><span id="summaryType" class="summary-value">Essay (Any)</span></div>
+                <div class="summary-row"><span class="summary-label">Deadline</span><span id="summaryDeadline" class="summary-value">48 Hours</span></div>
+                <div class="summary-row"><span class="summary-label">Pages</span><span id="summaryPages" class="summary-value">1 page x $19.60</span></div>
                 <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
-                <div class="summary-row"><span class="section-title">Total Price</span><span class="total">$21.60</span></div>
+                <div class="summary-row"><span class="section-title">Total Price</span><span id="summaryTotal" class="total">$19.60</span></div>
                 <div class="cards">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/0/0e/Mastercard-logo.png" alt="Mastercard">
@@ -355,10 +356,83 @@
     </div>
 
     <script>
+        const pricingMatrix = @json($pricing ?? []);
+        const defaultLevel = 'High School';
+        const defaultDeadline = '48 Hours';
+        const fallbackPrice = Number(
+            (pricingMatrix.College && pricingMatrix.College['48 Hours']) ?? 21.6
+        );
+
+        const levelInput = document.getElementById('levelInput');
+        const deadlineInput = document.getElementById('deadlineInput');
+        const pagesInput = document.getElementById('pages');
+        const typeSelect = document.querySelector('select[name="type"]');
+
+        const summaryLevel = document.getElementById('summaryLevel');
+        const summaryType = document.getElementById('summaryType');
+        const summaryDeadline = document.getElementById('summaryDeadline');
+        const summaryPages = document.getElementById('summaryPages');
+        const summaryTotal = document.getElementById('summaryTotal');
+
+        function toMoney(value) {
+            return '$' + Number(value).toFixed(2);
+        }
+
+        function resolvePrice(level, deadline) {
+            if (pricingMatrix[level] && pricingMatrix[level][deadline] != null) {
+                return Number(pricingMatrix[level][deadline]);
+            }
+
+            const matchedLevel = Object.keys(pricingMatrix).find(
+                key => key.toLowerCase() === String(level).toLowerCase()
+            );
+            if (matchedLevel) {
+                const row = pricingMatrix[matchedLevel];
+                const matchedDeadline = Object.keys(row).find(
+                    key => key.toLowerCase() === String(deadline).toLowerCase()
+                );
+                if (matchedDeadline) {
+                    return Number(row[matchedDeadline]);
+                }
+            }
+
+            return fallbackPrice;
+        }
+
+        function updateSummary() {
+            const level = (levelInput?.value || defaultLevel).trim();
+            const deadline = (deadlineInput?.value || defaultDeadline).trim();
+            const type = (typeSelect?.value || 'Essay (Any)').trim();
+            const pages = Math.max(parseInt(pagesInput?.value || 1, 10) || 1, 1);
+            const pricePerPage = resolvePrice(level, deadline);
+            const total = pages * pricePerPage;
+            const pageLabel = pages === 1 ? 'page' : 'pages';
+
+            if (pagesInput) {
+                pagesInput.value = pages;
+            }
+            if (summaryLevel) {
+                summaryLevel.textContent = level;
+            }
+            if (summaryType) {
+                summaryType.textContent = type;
+            }
+            if (summaryDeadline) {
+                summaryDeadline.textContent = deadline;
+            }
+            if (summaryPages) {
+                summaryPages.textContent = pages + ' ' + pageLabel + ' x ' + toMoney(pricePerPage);
+            }
+            if (summaryTotal) {
+                summaryTotal.textContent = toMoney(total);
+            }
+        }
+
         function step(id, delta) {
             const input = document.getElementById(id);
             const next = Math.max(parseInt(input.value || 0) + delta, parseInt(input.min || 0));
             input.value = next;
+            updateSummary();
         }
         // pill toggles within each data-group container
         document.querySelectorAll('[data-group]').forEach(group => {
@@ -368,6 +442,7 @@
                 [...group.children].forEach(el => el.classList.toggle('active', el === pill));
                 const hidden = document.getElementById(group.dataset.group + 'Input');
                 if (hidden) hidden.value = pill.textContent.trim();
+                updateSummary();
             });
         });
         // set initial hidden values based on default actives
@@ -378,6 +453,11 @@
                 if (hidden) hidden.value = active.textContent.trim();
             }
         });
+
+        typeSelect?.addEventListener('change', updateSummary);
+        pagesInput?.addEventListener('input', updateSummary);
+        pagesInput?.addEventListener('change', updateSummary);
+        updateSummary();
     </script>
 </body>
 </html>
