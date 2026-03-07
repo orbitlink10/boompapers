@@ -58,8 +58,8 @@
         </div>
         <div class="nav-group">
             <div class="nav-title">Manage Users</div>
-            <a class="nav-link" href="#">Clients</a>
-            <a class="nav-link" href="#">Writers</a>
+            <a class="nav-link" href="{{ route('admin.clients') }}">Clients</a>
+            <a class="nav-link" href="{{ route('admin.writers') }}">Writers</a>
         </div>
         <div class="nav-group">
             <div class="nav-title">Account</div>

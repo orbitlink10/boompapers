@@ -215,23 +215,23 @@
 
         <div class="nav-group">
             <div class="nav-title">Main</div>
-            <a class="nav-link active" href="#"><span>Dashboard</span></a>
-            <a class="nav-link" href="#"><span>Add Order</span></a>
-            <a class="nav-link" href="#"><span>Orders</span><span class="nav-count">20</span></a>
-            <a class="nav-link" href="#"><span>Courses</span><span class="nav-count">6</span></a>
+            <a class="nav-link active" href="{{ route('admin.dashboard') }}"><span>Dashboard</span></a>
+            <a class="nav-link" href="{{ route('order.create') }}"><span>Add Order</span></a>
+            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Orders</span><span class="nav-count">20</span></a>
+            <a class="nav-link" href="{{ route('admin.courses') }}"><span>Courses</span><span class="nav-count">6</span></a>
         </div>
 
         <div class="nav-group">
             <div class="nav-title">Manage Users</div>
-            <a class="nav-link" href="#"><span>Clients</span><span class="nav-count">9</span></a>
-            <a class="nav-link" href="#"><span>Writers</span><span class="nav-count">3</span></a>
-            <a class="nav-link" href="#"><span>Financial</span></a>
+            <a class="nav-link" href="{{ route('admin.clients') }}"><span>Clients</span><span class="nav-count">9</span></a>
+            <a class="nav-link" href="{{ route('admin.writers') }}"><span>Writers</span><span class="nav-count">3</span></a>
+            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Financial</span></a>
         </div>
 
         <div class="nav-group">
             <div class="nav-title">Configs</div>
-            <a class="nav-link" href="#"><span>Mass Email</span></a>
-            <a class="nav-link" href="#"><span>Configs</span></a>
+            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Mass Email</span></a>
+            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Configs</span></a>
         </div>
     </aside>
 

@@ -306,3 +306,68 @@ Route::get('/admin/orders/{id}', function ($id) {
     $files = collect(session('order_files', []))->where('order_id', (int)$id)->values()->all();
     return view('admin.order-show', ['order' => $order, 'files' => $files]);
 })->name('admin.order.show');
+
+Route::get('/admin/courses', function () {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $courses = [
+        ['id' => 1, 'name' => 'Business', 'active_writers' => 3],
+        ['id' => 2, 'name' => 'Nursing', 'active_writers' => 2],
+        ['id' => 3, 'name' => 'Technology', 'active_writers' => 4],
+        ['id' => 4, 'name' => 'Literature', 'active_writers' => 2],
+        ['id' => 5, 'name' => 'Economics', 'active_writers' => 3],
+        ['id' => 6, 'name' => 'History', 'active_writers' => 2],
+    ];
+
+    return view('admin.courses', ['courses' => $courses]);
+})->name('admin.courses');
+
+Route::get('/admin/clients', function () {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $orders = loadOrders();
+    $clients = collect($orders)
+        ->groupBy(fn ($order) => $order['customer_email'] ?? 'customer@example.com')
+        ->map(function ($rows, $email) {
+            $first = $rows->first();
+            return [
+                'name' => $first['customer_name'] ?? (strstr((string) $email, '@', true) ?: 'Client'),
+                'email' => $email,
+                'orders' => $rows->count(),
+                'spent' => round($rows->sum(fn ($row) => (float) ($row['cost'] ?? 0)), 2),
+            ];
+        })
+        ->values()
+        ->all();
+
+    return view('admin.clients', ['clients' => $clients]);
+})->name('admin.clients');
+
+Route::get('/admin/writers', function () {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $defaults = collect([
+        ['id' => 1, 'name' => 'Alice Writer'],
+        ['id' => 2, 'name' => 'Brian Smith'],
+        ['id' => 3, 'name' => 'Carol Johnson'],
+    ]);
+
+    $orders = loadOrders();
+    $writers = $defaults->map(function ($writer) use ($orders) {
+        $assigned = collect($orders)->where('writer_name', $writer['name']);
+        return [
+            'id' => $writer['id'],
+            'name' => $writer['name'],
+            'orders' => $assigned->count(),
+            'status' => $assigned->isEmpty() ? 'Available' : 'Active',
+        ];
+    })->values()->all();
+
+    return view('admin.writers', ['writers' => $writers]);
+})->name('admin.writers');
