@@ -275,14 +275,14 @@
             <span class="text">Boom<strong>Papers</strong></span>
         </a>
         <nav class="menu">
-            <a href="/" class="active">Home</a>
+            <a href="{{ url('/') }}" class="active">Home</a>
             <a href="#how">How it Works</a>
             <a href="#services">Services</a>
             <a href="#reviews">Reviews</a>
         </nav>
         <div class="actions">
-            <a class="btn btn-ghost" href="/order?tab=existing">Sign In</a>
-            <a class="btn btn-primary" href="/order?tab=new">Order Now</a>
+            <a class="btn btn-ghost" href="{{ route('order', ['tab' => 'existing']) }}">Sign In</a>
+            <a class="btn btn-primary" href="{{ route('order', ['tab' => 'new']) }}">Order Now</a>
         </div>
     </div>
     </header>
@@ -296,7 +296,7 @@
             Every paper is 100% original and tailored to your rubric.
         </p>
         <div class="cta-row">
-            <a class="btn btn-primary" href="#order">Order Now</a>
+            <a class="btn btn-primary" href="{{ route('order', ['tab' => 'new']) }}">Order Now</a>
             <a class="btn btn-outline" href="#chat">Live Chat</a>
             <span class="pill">Fast delivery · Free revisions</span>
         </div>

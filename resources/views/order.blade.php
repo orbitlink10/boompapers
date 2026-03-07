@@ -129,7 +129,7 @@
         </div>
 
         <div class="pane" id="pane-new">
-            <form action="/customer/register" method="POST">
+            <form action="{{ route('customer.register') }}" method="POST">
                 @csrf
                 <div class="field">
                     <label>Email address</label>
@@ -164,7 +164,7 @@
         </div>
 
         <div class="pane" id="pane-existing">
-            <form action="/customer/login" method="POST">
+            <form action="{{ route('customer.login') }}" method="POST">
                 @csrf
                 <div class="field">
                     <label>Email address</label>
@@ -179,7 +179,7 @@
         </div>
 
         <div class="alt">
-            Need help? <a href="/order?tab=existing">Chat with support</a>
+            Need help? <a href="{{ route('order', ['tab' => 'existing']) }}">Chat with support</a>
         </div>
     </div>
 

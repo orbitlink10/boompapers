@@ -164,7 +164,7 @@
 
     <div class="layout">
         <div class="card">
-            <form class="form-grid" action="/order/submit" method="POST">
+            <form class="form-grid" action="{{ route('order.submit') }}" method="POST">
                 @csrf
                 <div>
                     <label>Type of Paper</label>
