@@ -62,6 +62,10 @@
             <a class="nav-link" href="{{ route('admin.writers') }}">Writers</a>
         </div>
         <div class="nav-group">
+            <div class="nav-title">Configs</div>
+            <a class="nav-link" href="{{ route('admin.settings') }}">Settings</a>
+        </div>
+        <div class="nav-group">
             <div class="nav-title">Account</div>
             <a class="nav-link" href="{{ route('admin.logout') }}">Logout</a>
         </div>

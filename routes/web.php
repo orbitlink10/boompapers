@@ -26,6 +26,128 @@ if (!function_exists('saveOrders')) {
     }
 }
 
+if (!function_exists('pricingLevels')) {
+    function pricingLevels(): array
+    {
+        return ['High School', 'College', 'Masters', 'PhD'];
+    }
+}
+
+if (!function_exists('pricingDeadlines')) {
+    function pricingDeadlines(): array
+    {
+        return ['8 Hours', '24 Hours', '48 Hours', '3 Days', '5 Days', '7 Days', '14 Days'];
+    }
+}
+
+if (!function_exists('defaultPricingMatrix')) {
+    function defaultPricingMatrix(): array
+    {
+        return [
+            'High School' => [
+                '8 Hours' => 29.6,
+                '24 Hours' => 25.6,
+                '48 Hours' => 19.6,
+                '3 Days' => 17.6,
+                '5 Days' => 15.6,
+                '7 Days' => 14.6,
+                '14 Days' => 12.6,
+            ],
+            'College' => [
+                '8 Hours' => 32.6,
+                '24 Hours' => 28.6,
+                '48 Hours' => 21.6,
+                '3 Days' => 19.6,
+                '5 Days' => 17.6,
+                '7 Days' => 16.6,
+                '14 Days' => 14.6,
+            ],
+            'Masters' => [
+                '8 Hours' => 36.6,
+                '24 Hours' => 32.6,
+                '48 Hours' => 25.6,
+                '3 Days' => 23.6,
+                '5 Days' => 21.6,
+                '7 Days' => 20.6,
+                '14 Days' => 18.6,
+            ],
+            'PhD' => [
+                '8 Hours' => 40.6,
+                '24 Hours' => 36.6,
+                '48 Hours' => 29.6,
+                '3 Days' => 27.6,
+                '5 Days' => 25.6,
+                '7 Days' => 24.6,
+                '14 Days' => 22.6,
+            ],
+        ];
+    }
+}
+
+if (!function_exists('loadPricing')) {
+    function loadPricing(): array
+    {
+        $defaults = defaultPricingMatrix();
+        $file = storage_path('app/pricing.json');
+        if (!file_exists($file)) {
+            return $defaults;
+        }
+
+        $json = file_get_contents($file);
+        $decoded = json_decode($json, true);
+        if (!is_array($decoded)) {
+            return $defaults;
+        }
+
+        $pricing = [];
+        foreach (pricingLevels() as $level) {
+            foreach (pricingDeadlines() as $deadline) {
+                $value = $decoded[$level][$deadline] ?? $defaults[$level][$deadline];
+                $pricing[$level][$deadline] = is_numeric($value) ? round((float) $value, 2) : $defaults[$level][$deadline];
+            }
+        }
+
+        return $pricing;
+    }
+}
+
+if (!function_exists('savePricing')) {
+    function savePricing(array $pricing): void
+    {
+        $file = storage_path('app/pricing.json');
+        if (!is_dir(dirname($file))) {
+            mkdir(dirname($file), 0777, true);
+        }
+        file_put_contents($file, json_encode($pricing, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+}
+
+if (!function_exists('pricePerPageFor')) {
+    function pricePerPageFor(?string $level, ?string $deadline): float
+    {
+        $pricing = loadPricing();
+        $level = trim((string) ($level ?? 'College'));
+        $deadline = trim((string) ($deadline ?? '48 Hours'));
+
+        if (isset($pricing[$level][$deadline])) {
+            return (float) $pricing[$level][$deadline];
+        }
+
+        foreach ($pricing as $savedLevel => $rows) {
+            if (strcasecmp($savedLevel, $level) !== 0) {
+                continue;
+            }
+            foreach ($rows as $savedDeadline => $value) {
+                if (strcasecmp($savedDeadline, $deadline) === 0) {
+                    return (float) $value;
+                }
+            }
+        }
+
+        return (float) ($pricing['College']['48 Hours'] ?? 21.6);
+    }
+}
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -126,15 +248,17 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
     $orders = loadOrders();
     $id = (collect($orders)->max('id') ?? 802) + 1;
     $pages = $data['pages'] ?? 1;
-    $pricePerPage = 21.6;
+    $selectedLevel = $data['level'] ?? 'College';
+    $selectedDeadline = $data['deadline'] ?? '48 Hours';
+    $pricePerPage = pricePerPageFor($selectedLevel, $selectedDeadline);
     $orders[] = [
         'id' => $id,
         'title' => $data['title'] ?? 'Untitled Paper',
         'pages' => $pages,
         'cost' => round($pages * $pricePerPage, 2),
         'status' => 'pending',
-        'deadline' => $data['deadline'] ?? '48 Hours',
-        'level' => $data['level'] ?? 'College',
+        'deadline' => $selectedDeadline,
+        'level' => $selectedLevel,
         'type' => $data['type'] ?? 'Essay',
         'format' => $data['format'] ?? 'APA',
         'spacing' => $data['spacing'] ?? 'Double',
@@ -371,3 +495,45 @@ Route::get('/admin/writers', function () {
 
     return view('admin.writers', ['writers' => $writers]);
 })->name('admin.writers');
+
+Route::get('/admin/settings', function () {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    return view('admin.settings', [
+        'levels' => pricingLevels(),
+        'deadlines' => pricingDeadlines(),
+        'pricing' => loadPricing(),
+    ]);
+})->name('admin.settings');
+
+Route::post('/admin/settings', function (\Illuminate\Http\Request $request) {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $levels = pricingLevels();
+    $deadlines = pricingDeadlines();
+    $current = loadPricing();
+    $submitted = $request->input('prices', []);
+    $updated = [];
+
+    foreach ($levels as $level) {
+        foreach ($deadlines as $deadline) {
+            $raw = $submitted[$level][$deadline] ?? $current[$level][$deadline] ?? null;
+
+            if (!is_numeric($raw)) {
+                return back()->withErrors([
+                    'prices' => "Invalid price for {$level} / {$deadline}.",
+                ])->withInput();
+            }
+
+            $updated[$level][$deadline] = round(max(0, (float) $raw), 2);
+        }
+    }
+
+    savePricing($updated);
+
+    return back()->with('settings_saved', 'Pricing settings updated successfully.');
+})->name('admin.settings.update');
