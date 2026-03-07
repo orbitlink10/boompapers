@@ -346,10 +346,10 @@
                 <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
                 <div class="summary-row"><span class="section-title">Total Price</span><span id="summaryTotal" class="total">$19.60</span></div>
                 <div class="cards">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0e/Mastercard-logo.png" alt="Mastercard">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo_%282018%29.svg" alt="Amex">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/Discover_Card_logo.svg" alt="Discover">
+                    <img src="{{ asset('images/cards/visa.svg') }}" alt="Visa">
+                    <img src="{{ asset('images/cards/mastercard.svg') }}" alt="Mastercard">
+                    <img src="{{ asset('images/cards/amex.svg') }}" alt="Amex">
+                    <img src="{{ asset('images/cards/discover.svg') }}" alt="Discover">
                 </div>
             </div>
         </aside>
