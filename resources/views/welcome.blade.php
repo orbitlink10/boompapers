@@ -278,6 +278,7 @@
             <a href="{{ url('/') }}" class="active">Home</a>
             <a href="#how">How it Works</a>
             <a href="#services">Services</a>
+            <a href="{{ route('writers.index') }}">Writers</a>
             <a href="#reviews">Reviews</a>
         </nav>
         <div class="actions">

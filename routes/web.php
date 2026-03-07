@@ -30,6 +30,18 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/writers', function () {
+    $writers = [
+        ['name' => 'Alice Writer', 'specialty' => 'Business, Management', 'rating' => '4.9', 'orders' => 312],
+        ['name' => 'Brian Smith', 'specialty' => 'Nursing, Healthcare', 'rating' => '4.8', 'orders' => 284],
+        ['name' => 'Carol Johnson', 'specialty' => 'Technology, IT', 'rating' => '4.9', 'orders' => 355],
+        ['name' => 'David Lee', 'specialty' => 'Literature, History', 'rating' => '4.7', 'orders' => 241],
+        ['name' => 'Eva Brown', 'specialty' => 'Economics, Finance', 'rating' => '4.8', 'orders' => 298],
+    ];
+
+    return view('writers', ['writers' => $writers]);
+})->name('writers.index');
+
 Route::get('/order', function () {
     return view('order');
 })->name('order');
