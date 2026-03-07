@@ -182,7 +182,7 @@
         <div class="nav-group">
             <div class="nav-title">Main Menu</div>
             <a class="nav-link" href="{{ route('order.create') }}">New Order</a>
-            <a class="nav-link active" href="{{ route('customer.dashboard') }}">Orders <span class="badge">1</span></a>
+            <a class="nav-link active" href="{{ route('customer.dashboard') }}">Orders <span class="badge">{{ count($orders ?? []) }}</span></a>
             <a class="nav-link" href="#">Wallet <span class="badge">$0</span></a>
         </div>
         <div class="nav-group">
