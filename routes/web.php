@@ -198,6 +198,20 @@ if (!function_exists('pricePerPageFor')) {
     }
 }
 
+if (!function_exists('categoryMultiplierFor')) {
+    function categoryMultiplierFor(?string $category): float
+    {
+        $multipliers = [
+            'standard' => 1.0,
+            'premium' => 1.15,
+            'platinum' => 1.30,
+        ];
+
+        $key = strtolower(trim((string) ($category ?? 'standard')));
+        return $multipliers[$key] ?? 1.0;
+    }
+}
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -296,6 +310,8 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'sources' => 'nullable|integer|min:0',
         'slides' => 'nullable|integer|min:0',
         'charts' => 'nullable|integer|min:0',
+        'vip_support' => 'nullable|boolean',
+        'draft_outline' => 'nullable|boolean',
         'files' => 'nullable|array',
         'files.*' => 'file|max:5120',
     ]);
@@ -305,23 +321,32 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
     $pages = $data['pages'] ?? 1;
     $selectedLevel = $data['level'] ?? 'College';
     $selectedDeadline = $data['deadline'] ?? '48 Hours';
+    $selectedCategory = $data['category'] ?? 'Standard';
     $pricePerPage = pricePerPageFor($selectedLevel, $selectedDeadline);
+    $categoryMultiplier = categoryMultiplierFor($selectedCategory);
+    $vipSupport = $request->boolean('vip_support');
+    $draftOutline = $request->boolean('draft_outline');
+    $extrasCost = ($vipSupport ? 25 : 0) + ($draftOutline ? 20 : 0);
+    $baseCost = $pages * $pricePerPage;
+    $totalCost = round(($baseCost * $categoryMultiplier) + $extrasCost, 2);
     $orders[] = [
         'id' => $id,
         'title' => $data['title'] ?? 'Untitled Paper',
         'pages' => $pages,
-        'cost' => round($pages * $pricePerPage, 2),
+        'cost' => $totalCost,
         'status' => 'pending',
         'deadline' => $selectedDeadline,
         'level' => $selectedLevel,
         'type' => $data['type'] ?? 'Essay',
         'format' => $data['format'] ?? 'APA',
         'spacing' => $data['spacing'] ?? 'Double',
-        'category' => $data['category'] ?? 'Standard',
+        'category' => $selectedCategory,
         'subject' => $data['subject'] ?? 'Other',
         'sources' => $data['sources'] ?? 0,
         'slides' => $data['slides'] ?? 0,
         'charts' => $data['charts'] ?? 0,
+        'vip_support' => $vipSupport,
+        'draft_outline' => $draftOutline,
         'customer_email' => session('customer_email', 'customer'),
         'customer_name' => session('customer_name', 'Customer'),
     ];

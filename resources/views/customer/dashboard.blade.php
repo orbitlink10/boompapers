@@ -29,11 +29,11 @@
             min-height: 100vh;
         }
         .sidebar {
-            background: #fff;
-            border-right: 1px solid var(--border);
-            padding: 24px;
+            background: linear-gradient(180deg, #0f2a54 0%, #18447f 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 24px 16px;
             display: grid;
-            gap: 26px;
+            gap: 18px;
         }
         .brand {
             display: flex;
@@ -41,39 +41,57 @@
             gap: 12px;
             font-size: 24px;
             font-weight: 800;
+            color: #f1f7ff;
         }
         .brand .icon {
             width: 44px;
             height: 44px;
             border-radius: 14px;
-            background: #0f5951;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             display: grid;
             place-items: center;
-            color: #fff;
+            color: #dce8ff;
             font-size: 22px;
         }
-        .nav-group { display: grid; gap: 8px; }
-        .nav-title { font-size: 12px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--muted); font-weight: 800; }
-        .nav-link {
+        .menu-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .menu-link {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 14px;
+            gap: 14px;
+            padding: 8px 8px;
             border-radius: 12px;
-            color: #2f3236;
-            font-weight: 800;
             text-decoration: none;
-            transition: background .12s ease, color .12s ease;
+            transition: background .12s ease, color .12s ease, transform .12s ease;
+            color: #d6e3fb;
         }
-        .nav-link.active, .nav-link:hover { background: #ecf3f1; color: var(--green); }
-        .badge {
-            margin-left: auto;
-            background: #0f5951;
-            color: #fff;
-            border-radius: 10px;
-            padding: 4px 9px;
-            font-size: 12px;
+        .menu-link:hover, .menu-link.active {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f4f8ff;
+            transform: translateX(2px);
+        }
+        .menu-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            border: 1px solid rgba(186, 203, 232, 0.35);
+            background: rgba(140, 167, 214, 0.2);
+            color: #dce8ff;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
             font-weight: 800;
+            letter-spacing: 0.4px;
+            flex: 0 0 auto;
+        }
+        .menu-text {
+            font-size: 20px;
+            line-height: 1.25;
+            font-weight: 700;
         }
         .content {
             padding: 24px 28px 40px;
@@ -171,7 +189,7 @@
         }
         @media (max-width: 1000px) {
             .layout { grid-template-columns: 1fr; }
-            .sidebar { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); }
+            .sidebar { padding: 16px 12px; }
         }
     </style>
 </head>
@@ -179,22 +197,36 @@
 <div class="layout">
     <aside class="sidebar">
         <div class="brand"><span class="icon">◎</span><span>MyAccount</span></div>
-        <div class="nav-group">
-            <div class="nav-title">Main Menu</div>
-            <a class="nav-link" href="{{ route('order.create') }}">New Order</a>
-            <a class="nav-link active" href="{{ route('customer.dashboard') }}">Orders <span class="badge">{{ count($orders ?? []) }}</span></a>
-            <a class="nav-link" href="#">Wallet <span class="badge">$0</span></a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Listing</div>
-            <a class="nav-link" href="#">Courses <span class="badge">0</span></a>
-            <a class="nav-link" href="#">Top Writers</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Account</div>
-            <a class="nav-link" href="#">Profile</a>
-            <a class="nav-link" href="{{ route('customer.logout') }}">Logout</a>
-        </div>
+        <nav class="menu-list">
+            <a class="menu-link" href="{{ route('order.create') }}">
+                <span class="menu-icon">NO</span>
+                <span class="menu-text">New Order</span>
+            </a>
+            <a class="menu-link active" href="{{ route('customer.dashboard') }}">
+                <span class="menu-icon">OR</span>
+                <span class="menu-text">Orders</span>
+            </a>
+            <a class="menu-link" href="#">
+                <span class="menu-icon">WA</span>
+                <span class="menu-text">Wallet</span>
+            </a>
+            <a class="menu-link" href="#">
+                <span class="menu-icon">CO</span>
+                <span class="menu-text">Courses</span>
+            </a>
+            <a class="menu-link" href="#">
+                <span class="menu-icon">TW</span>
+                <span class="menu-text">Top Writers</span>
+            </a>
+            <a class="menu-link" href="#">
+                <span class="menu-icon">PR</span>
+                <span class="menu-text">Profile</span>
+            </a>
+            <a class="menu-link" href="{{ route('customer.logout') }}">
+                <span class="menu-icon">LO</span>
+                <span class="menu-text">Logout</span>
+            </a>
+        </nav>
     </aside>
 
     <main class="content">

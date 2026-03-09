@@ -91,13 +91,22 @@
 
         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px;">
             <div class="summary-grid">
+                @php
+                    $upsells = [];
+                    if (!empty($order['vip_support'])) {
+                        $upsells[] = 'VIP support';
+                    }
+                    if (!empty($order['draft_outline'])) {
+                        $upsells[] = 'Draft/outline';
+                    }
+                @endphp
                 <div class="row"><span class="label">Deadline</span><span class="value">{{ $order['deadline'] ?? '48 Hours' }}</span></div>
                 <div class="row"><span class="label">Order Status</span><span class="value" style="color:#c27a00;">Order is "Pending"</span></div>
                 <div class="row"><span class="label">Pages</span><span class="value">{{ $order['pages'] ?? 1 }} Pages 275 Words ({{ $order['spacing'] ?? 'Double' }}) , {{ $order['sources'] ?? 0 }} Sources</span></div>
                 <div class="row"><span class="label">Powerpoints</span><span class="value">{{ $order['charts'] ?? 0 }} Charts , {{ $order['slides'] ?? 0 }} PPTS</span></div>
                 <div class="row"><span class="label">Academic Level</span><span class="value">{{ $order['level'] ?? 'College' }}, {{ $order['category'] ?? 'Standard' }}</span></div>
                 <div class="row"><span class="label">Writer</span><span class="value">0</span></div>
-                <div class="row"><span class="label">Upsells</span><span class="value">VIP support, Draft/outline</span></div>
+                <div class="row"><span class="label">Upsells</span><span class="value">{{ empty($upsells) ? 'None' : implode(', ', $upsells) }}</span></div>
                 <div class="row"><span class="label">Subject</span><span class="value">{{ $order['subject'] ?? 'Other' }}, {{ $order['format'] ?? 'APA' }}</span></div>
             </div>
 

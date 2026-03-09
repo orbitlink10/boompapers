@@ -153,6 +153,32 @@
         .cards img { height: 22px; }
         .section-title { font-weight: 900; margin: 6px 0 2px; font-size: 14px; }
         .helper { color: var(--muted); font-weight: 600; font-size: 12px; margin-top: 4px; }
+        .addon-list {
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .addon-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: background .12s ease;
+        }
+        .addon-item + .addon-item {
+            border-top: 1px solid var(--border);
+        }
+        .addon-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--green);
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+        .addon-item.active {
+            background: #ecf3f1;
+        }
         @media (max-width: 950px) {
             .layout { grid-template-columns: 1fr; }
             .sidebar { position: static; }
@@ -322,22 +348,21 @@
 
                 <div>
                     <label>Additional Services</label>
-                    <div class="card" style="border:dashed 1px var(--border); box-shadow:none;">
-                        <div style="display:flex; align-items:center; gap:14px;">
-                            <input type="checkbox" id="vip">
+                    <div class="addon-list">
+                        <label class="addon-item" id="vipOption">
+                            <input type="checkbox" id="vip" name="vip_support" value="1">
                             <div>
                                 <div class="section-title">VIP support <span style="color:var(--green);">$25</span></div>
                                 <div class="helper">24/7 VIP manager and priority communication.</div>
                             </div>
-                        </div>
-                        <hr style="margin:16px -18px; border:none; border-top:1px solid var(--border);">
-                        <div style="display:flex; align-items:center; gap:14px;">
-                            <input type="checkbox" id="draft">
+                        </label>
+                        <label class="addon-item" id="draftOption">
+                            <input type="checkbox" id="draft" name="draft_outline" value="1">
                             <div>
                                 <div class="section-title">Draft/outline <span style="color:var(--green);">$20</span></div>
                                 <div class="helper">Receive a draft outlining structure before final paper.</div>
                             </div>
-                        </div>
+                        </label>
                     </div>
                 </div>
 
@@ -351,7 +376,9 @@
                 <div class="summary-row"><span class="summary-label">Level</span><span id="summaryLevel" class="summary-value">High School</span></div>
                 <div class="summary-row"><span class="summary-label">Type</span><span id="summaryType" class="summary-value">Essay (Any)</span></div>
                 <div class="summary-row"><span class="summary-label">Deadline</span><span id="summaryDeadline" class="summary-value">48 Hours</span></div>
+                <div class="summary-row"><span class="summary-label">Category</span><span id="summaryCategory" class="summary-value">Standard</span></div>
                 <div class="summary-row"><span class="summary-label">Pages</span><span id="summaryPages" class="summary-value">1 page x $19.60</span></div>
+                <div class="summary-row"><span class="summary-label">Extras</span><span id="summaryExtras" class="summary-value">$0.00</span></div>
                 <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
                 <div class="summary-row"><span class="section-title">Total Price</span><span id="summaryTotal" class="total">$19.60</span></div>
                 <div class="cards">
@@ -374,13 +401,27 @@
 
         const levelInput = document.getElementById('levelInput');
         const deadlineInput = document.getElementById('deadlineInput');
+        const categoryInput = document.getElementById('categoryInput');
         const pagesInput = document.getElementById('pages');
         const typeSelect = document.querySelector('select[name="type"]');
+        const vipCheckbox = document.getElementById('vip');
+        const draftCheckbox = document.getElementById('draft');
+        const categoryMultipliers = {
+            Standard: 1,
+            Premium: 1.15,
+            Platinum: 1.3,
+        };
+        const extraPrices = {
+            vip: 25,
+            draft: 20,
+        };
 
         const summaryLevel = document.getElementById('summaryLevel');
         const summaryType = document.getElementById('summaryType');
         const summaryDeadline = document.getElementById('summaryDeadline');
+        const summaryCategory = document.getElementById('summaryCategory');
         const summaryPages = document.getElementById('summaryPages');
+        const summaryExtras = document.getElementById('summaryExtras');
         const summaryTotal = document.getElementById('summaryTotal');
 
         function toMoney(value) {
@@ -408,13 +449,30 @@
             return fallbackPrice;
         }
 
+        function resolveCategoryMultiplier(category) {
+            const matchedCategory = Object.keys(categoryMultipliers).find(
+                key => key.toLowerCase() === String(category).toLowerCase()
+            );
+
+            return matchedCategory ? Number(categoryMultipliers[matchedCategory]) : 1;
+        }
+
+        function syncAddonStates() {
+            document.getElementById('vipOption')?.classList.toggle('active', Boolean(vipCheckbox?.checked));
+            document.getElementById('draftOption')?.classList.toggle('active', Boolean(draftCheckbox?.checked));
+        }
+
         function updateSummary() {
             const level = (levelInput?.value || defaultLevel).trim();
             const deadline = (deadlineInput?.value || defaultDeadline).trim();
+            const category = (categoryInput?.value || 'Standard').trim();
             const type = (typeSelect?.value || 'Essay (Any)').trim();
             const pages = Math.max(parseInt(pagesInput?.value || 1, 10) || 1, 1);
             const pricePerPage = resolvePrice(level, deadline);
-            const total = pages * pricePerPage;
+            const categoryMultiplier = resolveCategoryMultiplier(category);
+            const categoryTotal = pages * pricePerPage * categoryMultiplier;
+            const extrasTotal = (vipCheckbox?.checked ? extraPrices.vip : 0) + (draftCheckbox?.checked ? extraPrices.draft : 0);
+            const total = categoryTotal + extrasTotal;
             const pageLabel = pages === 1 ? 'page' : 'pages';
 
             if (pagesInput) {
@@ -429,8 +487,15 @@
             if (summaryDeadline) {
                 summaryDeadline.textContent = deadline;
             }
+            if (summaryCategory) {
+                summaryCategory.textContent = category;
+            }
             if (summaryPages) {
-                summaryPages.textContent = pages + ' ' + pageLabel + ' x ' + toMoney(pricePerPage);
+                const multiplierLabel = categoryMultiplier > 1 ? ' (' + category + ' x' + categoryMultiplier.toFixed(2) + ')' : '';
+                summaryPages.textContent = pages + ' ' + pageLabel + ' x ' + toMoney(pricePerPage) + multiplierLabel;
+            }
+            if (summaryExtras) {
+                summaryExtras.textContent = toMoney(extrasTotal);
             }
             if (summaryTotal) {
                 summaryTotal.textContent = toMoney(total);
@@ -466,6 +531,15 @@
         typeSelect?.addEventListener('change', updateSummary);
         pagesInput?.addEventListener('input', updateSummary);
         pagesInput?.addEventListener('change', updateSummary);
+        vipCheckbox?.addEventListener('change', () => {
+            syncAddonStates();
+            updateSummary();
+        });
+        draftCheckbox?.addEventListener('change', () => {
+            syncAddonStates();
+            updateSummary();
+        });
+        syncAddonStates();
         updateSummary();
     </script>
 </body>
