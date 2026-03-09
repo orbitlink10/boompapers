@@ -25,46 +25,46 @@
         }
         .layout {
             display: grid;
-            grid-template-columns: 240px 1fr;
+            grid-template-columns: 220px 1fr;
             min-height: 100vh;
         }
         .sidebar {
             background: linear-gradient(180deg, #0f2a54 0%, #18447f 100%);
             border-right: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 24px 16px;
+            padding: 18px 12px;
             display: grid;
-            gap: 18px;
+            gap: 12px;
         }
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 24px;
+            gap: 10px;
+            font-size: 20px;
             font-weight: 800;
             color: #f1f7ff;
         }
         .brand .icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+            width: 36px;
+            height: 36px;
+            border-radius: 11px;
             background: rgba(255, 255, 255, 0.12);
             border: 1px solid rgba(255, 255, 255, 0.2);
             display: grid;
             place-items: center;
             color: #dce8ff;
-            font-size: 22px;
+            font-size: 17px;
         }
         .menu-list {
             display: grid;
-            gap: 10px;
-            margin-top: 6px;
+            gap: 6px;
+            margin-top: 2px;
         }
         .menu-link {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 8px 8px;
-            border-radius: 12px;
+            gap: 10px;
+            padding: 4px 6px;
+            border-radius: 10px;
             text-decoration: none;
             transition: background .12s ease, color .12s ease, transform .12s ease;
             color: #d6e3fb;
@@ -75,22 +75,22 @@
             transform: translateX(2px);
         }
         .menu-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 11px;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
             border: 1px solid rgba(186, 203, 232, 0.35);
             background: rgba(140, 167, 214, 0.2);
             color: #dce8ff;
             display: grid;
             place-items: center;
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 800;
             letter-spacing: 0.4px;
             flex: 0 0 auto;
         }
         .menu-text {
-            font-size: 20px;
-            line-height: 1.25;
+            font-size: 15px;
+            line-height: 1.2;
             font-weight: 700;
         }
         .content {
@@ -189,7 +189,7 @@
         }
         @media (max-width: 1000px) {
             .layout { grid-template-columns: 1fr; }
-            .sidebar { padding: 16px 12px; }
+            .sidebar { padding: 14px 10px; }
         }
     </style>
 </head>
