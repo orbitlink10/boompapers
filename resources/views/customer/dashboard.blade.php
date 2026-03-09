@@ -218,7 +218,7 @@
         </div>
 
         @php
-            $orders = session('orders', []);
+            $orders = $orders ?? [];
             $count = fn($status) => collect($orders)->where('status', $status)->count();
         @endphp
         <div class="chips">

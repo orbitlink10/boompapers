@@ -26,6 +26,56 @@ if (!function_exists('saveOrders')) {
     }
 }
 
+if (!function_exists('ordersForCustomer')) {
+    function ordersForCustomer(array $orders, ?string $email): array
+    {
+        $email = trim((string) $email);
+        if ($email === '') {
+            return [];
+        }
+
+        return collect($orders)
+            ->filter(function ($order) use ($email) {
+                $orderEmail = trim((string) ($order['customer_email'] ?? ''));
+                return $orderEmail !== '' && strcasecmp($orderEmail, $email) === 0;
+            })
+            ->values()
+            ->all();
+    }
+}
+
+if (!function_exists('storeOrderFiles')) {
+    function storeOrderFiles(array $files, int $orderId): void
+    {
+        if (empty($files)) {
+            return;
+        }
+
+        $stored = session('order_files', []);
+        $dir = storage_path('app/uploads');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        foreach ($files as $file) {
+            if (!$file) {
+                continue;
+            }
+
+            $name = uniqid('order_' . $orderId . '_', true) . '_' . $file->getClientOriginalName();
+            $file->move($dir, $name);
+            $stored[] = [
+                'order_id' => $orderId,
+                'name' => $file->getClientOriginalName(),
+                'path' => $name,
+                'date' => now()->toDateTimeString(),
+            ];
+        }
+
+        session(['order_files' => $stored]);
+    }
+}
+
 if (!function_exists('pricingLevels')) {
     function pricingLevels(): array
     {
@@ -222,8 +272,9 @@ Route::get('/customer/dashboard', function () {
         $orders = session('orders');
         saveOrders($orders);
     }
-    $orders = collect($orders)->where('customer_email', session('customer_email'))->values()->all();
-    return view('customer.dashboard', ['orders' => $orders]);
+    $customerOrders = ordersForCustomer($orders, session('customer_email'));
+
+    return view('customer.dashboard', ['orders' => $customerOrders]);
 })->name('customer.dashboard');
 
 Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
@@ -245,6 +296,8 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'sources' => 'nullable|integer|min:0',
         'slides' => 'nullable|integer|min:0',
         'charts' => 'nullable|integer|min:0',
+        'files' => 'nullable|array',
+        'files.*' => 'file|max:5120',
     ]);
 
     $orders = loadOrders();
@@ -273,7 +326,10 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'customer_name' => session('customer_name', 'Customer'),
     ];
     saveOrders($orders);
-    session(['orders' => $orders]); // keep for customer view convenience
+    storeOrderFiles($request->file('files', []), $id);
+
+    // Keep any session copy scoped to the logged-in customer.
+    session(['orders' => ordersForCustomer($orders, session('customer_email'))]);
 
     return redirect()->route('customer.dashboard');
 })->name('order.submit');
@@ -282,46 +338,35 @@ Route::get('/customer/orders/{id}', function ($id) {
     if (!session('customer_logged_in')) {
         return redirect()->route('order', ['tab' => 'existing']);
     }
-    $orders = loadOrders();
-    $order = collect($orders)->where('customer_email', session('customer_email'))->firstWhere('id', (int)$id);
+    $orders = ordersForCustomer(loadOrders(), session('customer_email'));
+    $order = collect($orders)->firstWhere('id', (int)$id);
     if (!$order) {
         return redirect()->route('customer.dashboard');
     }
     $files = collect(session('order_files', []))->where('order_id', (int)$id)->values()->all();
-    return view('customer.order', ['order' => $order, 'files' => $files]);
+    return view('customer.order', [
+        'order' => $order,
+        'files' => $files,
+        'orderCount' => count($orders),
+    ]);
 })->name('customer.order.show');
 
 Route::post('/customer/orders/{id}/files', function (\Illuminate\Http\Request $request, $id) {
     if (!session('customer_logged_in')) {
         return redirect()->route('order', ['tab' => 'existing']);
     }
-    $orders = loadOrders();
-    $order = collect($orders)->where('customer_email', session('customer_email'))->firstWhere('id', (int)$id);
+    $orders = ordersForCustomer(loadOrders(), session('customer_email'));
+    $order = collect($orders)->firstWhere('id', (int)$id);
     if (!$order) {
         return redirect()->route('customer.dashboard');
     }
 
     $request->validate([
+        'files' => 'nullable|array',
         'files.*' => 'file|max:5120', // 5MB each for demo
     ]);
 
-    $stored = session('order_files', []);
-    $dir = storage_path('app/uploads');
-    if (!is_dir($dir)) {
-        mkdir($dir, 0777, true);
-    }
-
-    foreach ($request->file('files', []) as $file) {
-        $name = time() . '_' . $file->getClientOriginalName();
-        $file->move($dir, $name);
-        $stored[] = [
-            'order_id' => (int)$id,
-            'name' => $file->getClientOriginalName(),
-            'path' => $name,
-            'date' => now()->toDateTimeString(),
-        ];
-    }
-    session(['order_files' => $stored]);
+    storeOrderFiles($request->file('files', []), (int) $id);
 
     return back()->with('uploaded', 'Files uploaded successfully.');
 })->name('customer.order.files');

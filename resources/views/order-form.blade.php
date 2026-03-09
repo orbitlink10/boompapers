@@ -167,7 +167,7 @@
 
     <div class="layout">
         <div class="card">
-            <form class="form-grid" action="{{ route('order.submit') }}" method="POST">
+            <form class="form-grid" action="{{ route('order.submit') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div>
                     <label>Type of Paper</label>
@@ -211,6 +211,12 @@
                 <div>
                     <label>Instructions</label>
                     <textarea name="instructions" placeholder="Please paste all your paper instructions here"></textarea>
+                </div>
+
+                <div>
+                    <label>Upload Files (Optional)</label>
+                    <input type="file" name="files[]" multiple>
+                    <div class="helper">Attach rubrics, references, or any supporting documents (up to 5MB each).</div>
                 </div>
 
                 <div class="flex-row">
