@@ -123,7 +123,7 @@
         }
         .topline { display: grid; gap: 2px; }
         .eyebrow { font-size: 13px; color: var(--muted); font-weight: 700; }
-        .page-title { font-size: 36px; line-height: 1.05; font-weight: 800; letter-spacing: -0.4px; }
+        .page-title { font-size: 28px; line-height: 1.1; font-weight: 800; letter-spacing: -0.2px; }
         .topbar .actions {
             display: flex;
             gap: 12px;
@@ -171,7 +171,7 @@
             align-items: center;
             gap: 10px;
             font-weight: 800;
-            font-size: 17px;
+            font-size: 15px;
             color: #2c2c36;
         }
         .label-icon {
@@ -187,12 +187,12 @@
             font-weight: 800;
             letter-spacing: 0.2px;
         }
-        .card .count { font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -0.4px; }
-        .card small { color: var(--muted); font-size: 14px; }
+        .card .count { font-size: 26px; line-height: 1.1; font-weight: 800; letter-spacing: -0.1px; }
+        .card small { color: var(--muted); font-size: 12px; }
         .card .trend {
             margin-left: auto;
             color: var(--primary);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 800;
         }
         .chart-placeholder {
@@ -252,8 +252,8 @@
             .sidebar { flex-direction: row; flex-wrap: wrap; align-items: center; }
             .nav-group { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); width: 100%; }
             .content { padding: 24px 20px 40px; }
-            .page-title { font-size: 28px; }
-            .card .count { font-size: 36px; }
+            .page-title { font-size: 24px; }
+            .card .count { font-size: 22px; }
         }
     </style>
 </head>
