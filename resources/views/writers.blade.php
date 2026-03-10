@@ -190,7 +190,7 @@
                 <a href="{{ url('/') }}#reviews">Reviews</a>
             </nav>
             <div class="actions">
-                <a class="btn btn-ghost" href="{{ route('order', ['tab' => 'existing']) }}">Sign In</a>
+                <a class="btn btn-ghost" href="{{ route('writer.auth', ['tab' => 'existing']) }}">Writer Sign In</a>
                 <a class="btn btn-primary" href="{{ route('order', ['tab' => 'new']) }}">Order Now</a>
             </div>
         </div>

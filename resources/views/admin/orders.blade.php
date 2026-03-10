@@ -39,6 +39,9 @@
         .status.editing{background:#f0f2ff;color:#3c4ad9;}
         .status.approved{background:#eaf6ff;color:#1f6fb5;}
         .status.cancelled{background:#fde9e9;color:#c53030;}
+        .deadline-live{font-weight:800;color:#2f3236;white-space:nowrap;}
+        .deadline-live.deadline-urgent{color:#c27a00;}
+        .deadline-live.deadline-expired{color:#c53030;}
         .assign-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
         select,button{font-family:inherit;font-weight:800;}
         select{padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
@@ -126,7 +129,15 @@
                         </td>
                         <td>{{ $order['customer_email'] ?? 'customer' }}</td>
                         <td>{{ $order['writer_name'] ?? 'Unassigned' }}</td>
-                        <td>{{ $order['deadline'] ?? '48 Hours' }}</td>
+                        @php
+                            $fallbackDeadline = $order['deadline'] ?? '48 Hours';
+                            $dueAt = $order['due_at'] ?? null;
+                        @endphp
+                        <td>
+                            <span class="deadline-live" data-deadline="{{ $dueAt }}" data-fallback="{{ $fallbackDeadline }}">
+                                {{ $fallbackDeadline }}
+                            </span>
+                        </td>
                         <td><span class="status {{ $order['status'] ?? 'pending' }} status-pill" data-order="{{ $order['id'] }}">{{ ucfirst($order['status'] ?? 'pending') }}</span></td>
                         <td>
                             <div class="action-stack">
@@ -219,6 +230,61 @@
             applyFilter(val); // switch visible list to new status without reload
         });
     });
+
+    const deadlineCells = document.querySelectorAll('.deadline-live');
+
+    const formatRemainingDeadline = (diffMs) => {
+        const totalMinutes = Math.max(Math.floor(diffMs / 60000), 0);
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+
+        if (days > 0) {
+            return days + ' Day' + (days === 1 ? '' : 's') + ' ' + hours + 'h';
+        }
+        if (hours > 0) {
+            return hours + 'h ' + minutes + 'm';
+        }
+        return minutes + 'm';
+    };
+
+    const updateDeadlineCell = (cell) => {
+        const dueAtRaw = cell.dataset.deadline || '';
+        const fallback = cell.dataset.fallback || 'N/A';
+        const dueAtMs = Date.parse(dueAtRaw);
+
+        if (!Number.isFinite(dueAtMs)) {
+            cell.textContent = fallback;
+            cell.classList.remove('deadline-urgent', 'deadline-expired');
+            return;
+        }
+
+        const now = Date.now();
+        const diffMs = dueAtMs - now;
+        cell.title = 'Due ' + new Date(dueAtMs).toLocaleString();
+
+        if (diffMs <= 0) {
+            cell.textContent = 'Expired';
+            cell.classList.remove('deadline-urgent');
+            cell.classList.add('deadline-expired');
+            return;
+        }
+
+        cell.textContent = formatRemainingDeadline(diffMs);
+        cell.classList.remove('deadline-expired');
+        if (diffMs <= 60 * 60 * 1000) {
+            cell.classList.add('deadline-urgent');
+        } else {
+            cell.classList.remove('deadline-urgent');
+        }
+    };
+
+    const refreshDeadlines = () => {
+        deadlineCells.forEach(updateDeadlineCell);
+    };
+
+    refreshDeadlines();
+    setInterval(refreshDeadlines, 30000);
 </script>
 </body>
 </html>

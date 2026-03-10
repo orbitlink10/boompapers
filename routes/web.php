@@ -14,7 +14,7 @@ if (!function_exists('loadOrders')) {
             }
 
             // Keep only orders that belong to a client account.
-            return collect($data)
+            $orders = collect($data)
                 ->filter(function ($order) {
                     if (!is_array($order)) {
                         return false;
@@ -24,6 +24,8 @@ if (!function_exists('loadOrders')) {
                 })
                 ->values()
                 ->all();
+
+            return normalizeOrderDeadlines($orders);
         }
         return [];
     }
@@ -37,6 +39,182 @@ if (!function_exists('saveOrders')) {
             mkdir(dirname($file), 0777, true);
         }
         file_put_contents($file, json_encode(array_values($orders)));
+    }
+}
+
+if (!function_exists('loadWriters')) {
+    function loadWriters(): array
+    {
+        $file = storage_path('app/writers.json');
+        if (!file_exists($file)) {
+            return [];
+        }
+
+        $json = file_get_contents($file);
+        $data = json_decode($json, true);
+
+        return is_array($data) ? array_values($data) : [];
+    }
+}
+
+if (!function_exists('saveWriters')) {
+    function saveWriters(array $writers): void
+    {
+        $file = storage_path('app/writers.json');
+        if (!is_dir(dirname($file))) {
+            mkdir(dirname($file), 0777, true);
+        }
+
+        file_put_contents($file, json_encode(array_values($writers)));
+    }
+}
+
+if (!function_exists('findWriterByEmail')) {
+    function findWriterByEmail(array $writers, ?string $email): ?array
+    {
+        $email = strtolower(trim((string) $email));
+        if ($email === '') {
+            return null;
+        }
+
+        foreach ($writers as $writer) {
+            if (!is_array($writer)) {
+                continue;
+            }
+            $writerEmail = strtolower(trim((string) ($writer['email'] ?? '')));
+            if ($writerEmail === $email) {
+                return $writer;
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('durationLabelFromSeconds')) {
+    function durationLabelFromSeconds(int $seconds): string
+    {
+        $seconds = max(0, $seconds);
+        $totalMinutes = (int) floor($seconds / 60);
+        $days = (int) floor($totalMinutes / 1440);
+        $hours = (int) floor(($totalMinutes % 1440) / 60);
+        $minutes = $totalMinutes % 60;
+
+        if ($days > 0) {
+            return $days . ' Day' . ($days === 1 ? '' : 's') . ' ' . $hours . 'h';
+        }
+
+        if ($hours > 0) {
+            return $hours . 'h ' . $minutes . 'm';
+        }
+
+        return $minutes . 'm';
+    }
+}
+
+if (!function_exists('remainingDeadlineLabelFor')) {
+    function remainingDeadlineLabelFor(?string $dueAt, string $fallback = 'N/A'): string
+    {
+        $dueAtTs = strtotime((string) ($dueAt ?? ''));
+        if ($dueAtTs === false || $dueAtTs <= 0) {
+            return $fallback;
+        }
+
+        $diffSeconds = $dueAtTs - time();
+        if ($diffSeconds <= 0) {
+            return 'Expired';
+        }
+
+        return durationLabelFromSeconds($diffSeconds);
+    }
+}
+
+if (!function_exists('deadlineSecondsFor')) {
+    function deadlineSecondsFor(?string $deadline): ?int
+    {
+        $label = trim((string) $deadline);
+        if ($label === '') {
+            return null;
+        }
+
+        if (!preg_match('/^(\d+)\s*(hour|hours|day|days)$/i', $label, $matches)) {
+            return null;
+        }
+
+        $amount = (int) $matches[1];
+        $unit = strtolower($matches[2]);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        if (in_array($unit, ['day', 'days'], true)) {
+            return $amount * 24 * 60 * 60;
+        }
+
+        return $amount * 60 * 60;
+    }
+}
+
+if (!function_exists('writerDueAtForOrder')) {
+    function writerDueAtForOrder(array $order): ?string
+    {
+        $baseDueTs = strtotime((string) ($order['due_at'] ?? ''));
+        if ($baseDueTs === false || $baseDueTs <= 0) {
+            $createdAtTs = strtotime((string) ($order['created_at'] ?? ''));
+            if ($createdAtTs === false || $createdAtTs <= 0) {
+                $createdAtTs = time();
+            }
+
+            $seconds = deadlineSecondsFor($order['deadline'] ?? null);
+            if ($seconds === null) {
+                return null;
+            }
+            $baseDueTs = $createdAtTs + $seconds;
+        }
+
+        $writerDueTs = $baseDueTs - (4 * 60 * 60);
+
+        return date(DATE_ATOM, $writerDueTs);
+    }
+}
+
+if (!function_exists('normalizeOrderDeadlines')) {
+    function normalizeOrderDeadlines(array $orders): array
+    {
+        $normalized = [];
+        $changed = false;
+
+        foreach ($orders as $order) {
+            if (!is_array($order)) {
+                continue;
+            }
+
+            $item = $order;
+
+            $createdAtTs = strtotime((string) ($item['created_at'] ?? ''));
+            if ($createdAtTs === false || $createdAtTs <= 0) {
+                $createdAtTs = time();
+                $item['created_at'] = date(DATE_ATOM, $createdAtTs);
+                $changed = true;
+            }
+
+            $dueAtTs = strtotime((string) ($item['due_at'] ?? ''));
+            if ($dueAtTs === false || $dueAtTs <= 0) {
+                $seconds = deadlineSecondsFor($item['deadline'] ?? null);
+                if ($seconds !== null) {
+                    $item['due_at'] = date(DATE_ATOM, $createdAtTs + $seconds);
+                    $changed = true;
+                }
+            }
+
+            $normalized[] = $item;
+        }
+
+        if ($changed) {
+            saveOrders($normalized);
+        }
+
+        return $normalized;
     }
 }
 
@@ -291,6 +469,332 @@ Route::get('/customer/logout', function () {
     return redirect()->route('order', ['tab' => 'existing']);
 })->name('customer.logout');
 
+Route::get('/writer', function (\Illuminate\Http\Request $request) {
+    if (session('writer_logged_in')) {
+        return redirect()->route('writer.dashboard');
+    }
+
+    return view('writer.auth', [
+        'tab' => $request->query('tab', 'new'),
+    ]);
+})->name('writer.auth');
+
+Route::post('/writer/register', function (\Illuminate\Http\Request $request) {
+    $data = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email',
+        'password' => 'required|string|min:6',
+        'tab' => 'nullable|string',
+    ]);
+
+    $writers = loadWriters();
+    if (findWriterByEmail($writers, $data['email'])) {
+        return back()
+            ->withErrors(['email' => 'A writer account with this email already exists.'])
+            ->withInput();
+    }
+
+    $id = (collect($writers)->max('id') ?? 0) + 1;
+    $writers[] = [
+        'id' => $id,
+        'name' => $data['name'],
+        'email' => strtolower(trim($data['email'])),
+        'password' => password_hash($data['password'], PASSWORD_DEFAULT),
+        'created_at' => now()->toIso8601String(),
+    ];
+    saveWriters($writers);
+
+    session([
+        'writer_logged_in' => true,
+        'writer_id' => $id,
+        'writer_name' => $data['name'],
+        'writer_email' => strtolower(trim($data['email'])),
+    ]);
+
+    return redirect()->route('writer.dashboard');
+})->name('writer.register');
+
+Route::post('/writer/login', function (\Illuminate\Http\Request $request) {
+    $data = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string',
+        'tab' => 'nullable|string',
+    ]);
+
+    $writer = findWriterByEmail(loadWriters(), $data['email']);
+    $passwordHash = (string) ($writer['password'] ?? '');
+    $isValid = $writer && $passwordHash !== '' && password_verify($data['password'], $passwordHash);
+    if (!$isValid) {
+        return back()
+            ->withErrors(['credentials' => 'Invalid email or password.'])
+            ->withInput();
+    }
+
+    session([
+        'writer_logged_in' => true,
+        'writer_id' => $writer['id'] ?? null,
+        'writer_name' => $writer['name'] ?? 'Writer',
+        'writer_email' => $writer['email'] ?? strtolower(trim($data['email'])),
+    ]);
+
+    return redirect()->route('writer.dashboard');
+})->name('writer.login');
+
+Route::get('/writer/logout', function () {
+    session()->forget(['writer_logged_in', 'writer_id', 'writer_name', 'writer_email']);
+    return redirect()->route('writer.auth', ['tab' => 'existing']);
+})->name('writer.logout');
+
+Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
+    if (!session('writer_logged_in')) {
+        return redirect()->route('writer.auth', ['tab' => 'existing']);
+    }
+
+    $writerId = (int) (session('writer_id') ?? 0);
+    $writerName = trim((string) (session('writer_name') ?? ''));
+    $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
+    $scope = $request->query('scope', 'mine');
+    if (!in_array($scope, ['mine', 'available', 'all'], true)) {
+        $scope = 'mine';
+    }
+
+    $statusOptions = [
+        'assigned' => 'Assigned',
+        'inprogress' => 'In Progress',
+        'editing' => 'Editing',
+        'revision' => 'Revision',
+        'completed' => 'Completed',
+        'approved' => 'Approved',
+    ];
+
+    $ordersCollection = collect(loadOrders());
+
+    $isMine = function (array $order) use ($writerId, $writerName, $writerEmail) {
+        $assignedId = (int) ($order['writer_id'] ?? 0);
+        $assignedName = trim((string) ($order['writer_name'] ?? ''));
+        $assignedEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+        return $writerId > 0 && $assignedId === $writerId
+            || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0)
+            || ($writerEmail !== '' && $assignedEmail !== '' && strcasecmp($assignedEmail, $writerEmail) === 0);
+    };
+
+    $canClaim = function (array $order) {
+        $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+        $assignedId = (int) ($order['writer_id'] ?? 0);
+        $assignedName = trim((string) ($order['writer_name'] ?? ''));
+
+        return $assignedId <= 0 && $assignedName === '' && in_array($status, ['pending', 'available'], true);
+    };
+
+    $mineCount = $ordersCollection->filter($isMine)->count();
+    $availableCount = $ordersCollection->filter($canClaim)->count();
+
+    $orders = $ordersCollection
+        ->filter(function (array $order) use ($scope, $isMine, $canClaim) {
+            if (!is_array($order)) {
+                return false;
+            }
+
+            if ($scope === 'mine') {
+                return $isMine($order);
+            }
+
+            if ($scope === 'available') {
+                return $canClaim($order);
+            }
+
+            return true;
+        })
+        ->sortByDesc(fn ($order) => (int) ($order['id'] ?? 0))
+        ->map(function (array $order) use ($writerId, $writerName, $writerEmail, $statusOptions, $canClaim) {
+            $writerDueAt = writerDueAtForOrder($order);
+            $postedDeadlineSeconds = deadlineSecondsFor($order['deadline'] ?? null);
+            $adjustedSeconds = $postedDeadlineSeconds !== null ? max(0, $postedDeadlineSeconds - (4 * 60 * 60)) : null;
+            $fallbackDeadline = $adjustedSeconds !== null
+                ? durationLabelFromSeconds($adjustedSeconds)
+                : (string) ($order['deadline'] ?? 'N/A');
+
+            $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+            $orderWriterId = (int) ($order['writer_id'] ?? 0);
+            $orderWriterName = trim((string) ($order['writer_name'] ?? ''));
+            $orderWriterEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+
+            $isAssignedToCurrent = $writerId > 0 && $orderWriterId === $writerId
+                || ($writerName !== '' && $orderWriterName !== '' && strcasecmp($orderWriterName, $writerName) === 0)
+                || ($writerEmail !== '' && $orderWriterEmail !== '' && strcasecmp($orderWriterEmail, $writerEmail) === 0);
+
+            $files = collect(session('order_files', []))
+                ->where('order_id', (int) ($order['id'] ?? 0))
+                ->values()
+                ->all();
+
+            return [
+                'id' => $order['id'] ?? null,
+                'title' => $order['title'] ?? 'Untitled',
+                'subject' => $order['subject'] ?? 'Other',
+                'type' => $order['type'] ?? 'Essay',
+                'pages' => (int) ($order['pages'] ?? 1),
+                'status' => $status,
+                'client_name' => $order['customer_name'] ?? 'Client',
+                'client_email' => $order['customer_email'] ?? 'client@example.com',
+                'assigned_writer' => $orderWriterName !== '' ? $orderWriterName : 'Unassigned',
+                'writer_due_at' => $writerDueAt,
+                'writer_deadline' => remainingDeadlineLabelFor($writerDueAt, $fallbackDeadline),
+                'writer_deadline_fallback' => $fallbackDeadline,
+                'is_assigned_to_current' => $isAssignedToCurrent,
+                'can_claim' => $canClaim($order),
+                'status_options' => $statusOptions,
+                'files_count' => count($files),
+            ];
+        })
+        ->values()
+        ->all();
+
+    return view('writer.dashboard', [
+        'orders' => $orders,
+        'scope' => $scope,
+        'counts' => [
+            'mine' => $mineCount,
+            'available' => $availableCount,
+            'all' => $ordersCollection->count(),
+        ],
+    ]);
+})->name('writer.dashboard');
+
+Route::post('/writer/orders/{id}/claim', function (\Illuminate\Http\Request $request, $id) {
+    if (!session('writer_logged_in')) {
+        return redirect()->route('writer.auth', ['tab' => 'existing']);
+    }
+
+    $orders = loadOrders();
+    $targetId = (int) $id;
+    $writerId = (int) (session('writer_id') ?? 0);
+    $writerName = trim((string) (session('writer_name') ?? ''));
+    $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
+    $found = false;
+    $updated = false;
+
+    foreach ($orders as &$order) {
+        if (!is_array($order) || (int) ($order['id'] ?? 0) !== $targetId) {
+            continue;
+        }
+
+        $found = true;
+        $assignedId = (int) ($order['writer_id'] ?? 0);
+        $assignedName = trim((string) ($order['writer_name'] ?? ''));
+        $assignedEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+        $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+
+        if (($assignedId > 0 && $writerId > 0 && $assignedId !== $writerId)
+            || ($assignedName !== '' && $writerName !== '' && strcasecmp($assignedName, $writerName) !== 0)
+            || ($assignedEmail !== '' && $writerEmail !== '' && strcasecmp($assignedEmail, $writerEmail) !== 0)) {
+            return back()->with('error', 'This order is already assigned.');
+        }
+
+        if ($assignedId === $writerId || ($assignedName !== '' && strcasecmp($assignedName, $writerName) === 0)) {
+            return back()->with('status', 'This order is already assigned to you.');
+        }
+
+        if (!in_array($status, ['pending', 'available'], true)) {
+            return back()->with('error', 'Only available orders can be claimed right now.');
+        }
+
+        $order['writer_id'] = $writerId;
+        $order['writer_name'] = $writerName;
+        $order['writer_email'] = $writerEmail;
+        $order['status'] = 'assigned';
+        $updated = true;
+        break;
+    }
+
+    if (!$found) {
+        return back()->with('error', 'Order not found.');
+    }
+
+    if (!$updated) {
+        return back()->with('error', 'Could not claim this order.');
+    }
+
+    saveOrders($orders);
+    return back()->with('status', 'Order claimed successfully.');
+})->name('writer.order.claim');
+
+Route::post('/writer/orders/{id}/status', function (\Illuminate\Http\Request $request, $id) {
+    if (!session('writer_logged_in')) {
+        return redirect()->route('writer.auth', ['tab' => 'existing']);
+    }
+
+    $data = $request->validate([
+        'status' => 'required|string|max:50',
+    ]);
+
+    $allowedStatuses = ['assigned', 'inprogress', 'editing', 'revision', 'completed', 'approved'];
+    $newStatus = strtolower(trim((string) $data['status']));
+    if (!in_array($newStatus, $allowedStatuses, true)) {
+        return back()->with('error', 'Invalid status selected.');
+    }
+
+    $orders = loadOrders();
+    $writerId = (int) (session('writer_id') ?? 0);
+    $writerName = trim((string) (session('writer_name') ?? ''));
+    $targetId = (int) $id;
+    $found = false;
+
+    foreach ($orders as &$order) {
+        if (!is_array($order) || (int) ($order['id'] ?? 0) !== $targetId) {
+            continue;
+        }
+
+        $found = true;
+        $assignedId = (int) ($order['writer_id'] ?? 0);
+        $assignedName = trim((string) ($order['writer_name'] ?? ''));
+
+        if (!($assignedId === $writerId || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0))) {
+            return back()->with('error', 'You can only update orders assigned to you.');
+        }
+
+        $order['status'] = $newStatus;
+        $order['writer_last_update_at'] = now()->toIso8601String();
+        break;
+    }
+
+    if (!$found) {
+        return back()->with('error', 'Order not found.');
+    }
+
+    saveOrders($orders);
+    return back()->with('status', 'Order status updated.');
+})->name('writer.order.status');
+
+Route::post('/writer/orders/{id}/files', function (\Illuminate\Http\Request $request, $id) {
+    if (!session('writer_logged_in')) {
+        return redirect()->route('writer.auth', ['tab' => 'existing']);
+    }
+
+    $orders = loadOrders();
+    $order = collect($orders)->firstWhere('id', (int) $id);
+    if (!$order || !is_array($order)) {
+        return redirect()->route('writer.dashboard')->with('error', 'Order not found.');
+    }
+
+    $writerId = (int) (session('writer_id') ?? 0);
+    $writerName = trim((string) (session('writer_name') ?? ''));
+    $assignedId = (int) ($order['writer_id'] ?? 0);
+    $assignedName = trim((string) ($order['writer_name'] ?? ''));
+
+    if (!($assignedId === $writerId || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0))) {
+        return back()->with('error', 'You can only upload files to orders assigned to you.');
+    }
+
+    $request->validate([
+        'files' => 'nullable|array',
+        'files.*' => 'file|max:5120',
+    ]);
+
+    storeOrderFiles($request->file('files', []), (int) $id);
+    return back()->with('uploaded', 'Files uploaded successfully.');
+})->name('writer.order.files');
+
 Route::get('/customer/dashboard', function () {
     if (!session('customer_logged_in')) {
         return redirect()->route('order', ['tab' => 'existing']);
@@ -334,6 +838,11 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
     $selectedCategory = $data['category'] ?? 'Standard';
     $pricePerPage = pricePerPageFor($selectedLevel, $selectedDeadline);
     $categoryMultiplier = categoryMultiplierFor($selectedCategory);
+    $createdAt = now();
+    $deadlineSeconds = deadlineSecondsFor($selectedDeadline);
+    $dueAt = $deadlineSeconds !== null
+        ? $createdAt->copy()->addSeconds($deadlineSeconds)->toIso8601String()
+        : null;
     $vipSupport = $request->boolean('vip_support');
     $draftOutline = $request->boolean('draft_outline');
     $extrasCost = ($vipSupport ? 25 : 0) + ($draftOutline ? 20 : 0);
@@ -357,6 +866,8 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'charts' => $data['charts'] ?? 0,
         'vip_support' => $vipSupport,
         'draft_outline' => $draftOutline,
+        'created_at' => $createdAt->toIso8601String(),
+        'due_at' => $dueAt,
         'customer_email' => session('customer_email', 'customer'),
         'customer_name' => session('customer_name', 'Customer'),
     ];
@@ -483,17 +994,48 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
         $orders = $orders->where('status', $status);
     }
     $orders = $orders->values()->all();
-    $writers = $allOrders
+    $registeredWriters = collect(loadWriters())
+        ->map(function ($writer) {
+            $name = trim((string) ($writer['name'] ?? ''));
+            if ($name === '') {
+                return null;
+            }
+
+            return [
+                'id' => is_numeric($writer['id'] ?? null) ? (int) $writer['id'] : null,
+                'name' => $name,
+            ];
+        })
+        ->filter()
+        ->values();
+
+    $maxWriterId = (int) ($registeredWriters->max('id') ?? 0);
+    $registeredByKey = $registeredWriters->keyBy(
+        fn ($writer) => strtolower(trim((string) $writer['name']))
+    );
+
+    $historicalNames = $allOrders
         ->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
         ->filter()
         ->groupBy(fn ($name) => strtolower($name))
         ->values()
-        ->map(function ($rows, $index) {
-            return [
-                'id' => $index + 1,
-                'name' => $rows->first(),
-            ];
-        })
+        ->map(fn ($rows) => $rows->first());
+
+    foreach ($historicalNames as $historicalName) {
+        $key = strtolower(trim((string) $historicalName));
+        if ($key === '' || $registeredByKey->has($key)) {
+            continue;
+        }
+        $maxWriterId++;
+        $registeredWriters->push([
+            'id' => $maxWriterId,
+            'name' => $historicalName,
+        ]);
+        $registeredByKey->put($key, true);
+    }
+
+    $writers = $registeredWriters
+        ->values()
         ->all();
     return view('admin.orders', [
         'orders' => $orders,
@@ -648,18 +1190,54 @@ Route::get('/admin/writers', function () {
     }
 
     $orders = loadOrders();
-    $writers = collect($orders)
+    $registeredWriters = collect(loadWriters())
+        ->map(function ($writer) {
+            $name = trim((string) ($writer['name'] ?? ''));
+            if ($name === '') {
+                return null;
+            }
+
+            return [
+                'id' => is_numeric($writer['id'] ?? null) ? (int) $writer['id'] : null,
+                'name' => $name,
+            ];
+        })
+        ->filter()
+        ->values();
+
+    $maxWriterId = (int) ($registeredWriters->max('id') ?? 0);
+    $registeredByKey = $registeredWriters->keyBy(
+        fn ($writer) => strtolower(trim((string) ($writer['name'] ?? '')))
+    );
+
+    $legacyWriterNames = collect($orders)
         ->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
         ->filter()
         ->groupBy(fn ($name) => strtolower($name))
         ->values()
-        ->map(function ($rows, $index) use ($orders) {
-        $writerName = $rows->first();
+        ->map(fn ($rows) => $rows->first());
+
+    foreach ($legacyWriterNames as $legacyName) {
+        $key = strtolower(trim((string) $legacyName));
+        if ($key === '' || $registeredByKey->has($key)) {
+            continue;
+        }
+        $maxWriterId++;
+        $registeredWriters->push([
+            'id' => $maxWriterId,
+            'name' => $legacyName,
+        ]);
+        $registeredByKey->put($key, true);
+    }
+
+    $writers = $registeredWriters->values()->map(function ($writer) use ($orders) {
+        $writerName = $writer['name'];
         $assigned = collect($orders)->filter(
             fn ($order) => strcasecmp(trim((string) ($order['writer_name'] ?? '')), $writerName) === 0
         );
+
         return [
-            'id' => $index + 1,
+            'id' => $writer['id'],
             'name' => $writerName,
             'orders' => $assigned->count(),
             'status' => $assigned->isEmpty() ? 'Available' : 'Active',
