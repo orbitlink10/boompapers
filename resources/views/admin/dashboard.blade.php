@@ -9,19 +9,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent: #f25c3c;
-            --accent-soft: #ffe7df;
-            --dark: #1c1c28;
-            --muted: #6b6b7a;
+            --primary: #1d7bff;
+            --primary-strong: #1466de;
+            --primary-soft: #eaf3ff;
+            --dark: #14141a;
+            --muted: #5c5c6a;
             --card: #ffffff;
-            --border: #ececf3;
-            --bg: linear-gradient(180deg, #fff6f2 0%, #f8f9fb 100%);
+            --border: #e6e8f0;
+            --bg: #f7f8fb;
+            --shadow: 0 16px 36px rgba(23, 44, 85, 0.08);
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at 90% 8%, rgba(29, 123, 255, 0.12), rgba(29, 123, 255, 0) 28%),
+                var(--bg);
             color: var(--dark);
             min-height: 100vh;
         }
@@ -37,8 +41,8 @@
             padding: 24px 22px;
             display: flex;
             flex-direction: column;
-            gap: 28px;
-            box-shadow: 8px 0 30px rgba(0,0,0,0.04);
+            gap: 22px;
+            box-shadow: 8px 0 30px rgba(0, 0, 0, 0.04);
         }
         .brand {
             display: flex;
@@ -51,55 +55,75 @@
             width: 42px;
             height: 42px;
             border-radius: 14px;
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--primary), #25c7ff);
             color: #fff;
             display: grid;
             place-items: center;
-            font-size: 20px;
-            box-shadow: 0 14px 28px rgba(242,92,60,0.35);
+            font-size: 16px;
+            box-shadow: 0 14px 28px rgba(29, 123, 255, 0.32);
         }
         .badge-label {
-            background: var(--accent-soft);
-            padding: 12px 14px;
+            background: var(--primary-soft);
+            padding: 10px 12px;
             border-radius: 14px;
             font-weight: 700;
-            color: var(--accent);
+            font-size: 13px;
+            color: var(--primary-strong);
         }
         .nav-group { display: grid; gap: 10px; }
-        .nav-title { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.4px; text-transform: uppercase; }
+        .nav-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
         .nav-link {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 14px;
+            padding: 10px 12px;
             border-radius: 12px;
             font-weight: 700;
+            font-size: 14px;
             color: #2d2d35;
-            transition: background .12s ease, color .12s ease;
+            transition: background .12s ease, color .12s ease, transform .12s ease;
         }
         .nav-link.active,
-        .nav-link:hover { background: #fff2ec; color: var(--accent); }
+        .nav-link:hover {
+            background: var(--primary-soft);
+            color: var(--primary-strong);
+            transform: translateX(1px);
+        }
         .nav-count {
             margin-left: auto;
-            background: #f3f4f8;
+            background: #f2f6ff;
             border-radius: 10px;
             padding: 4px 9px;
             font-size: 12px;
             font-weight: 800;
-            color: #3a3a45;
+            color: #2f4168;
         }
         .content {
-            padding: 28px 32px 48px;
+            padding: 24px 28px 42px;
             display: grid;
-            gap: 24px;
-            background: var(--bg);
+            gap: 18px;
+            background: transparent;
         }
         .topbar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 18px;
             display: flex;
             align-items: center;
             gap: 16px;
             justify-content: space-between;
+            box-shadow: var(--shadow);
         }
+        .topline { display: grid; gap: 2px; }
+        .eyebrow { font-size: 13px; color: var(--muted); font-weight: 700; }
+        .page-title { font-size: 36px; line-height: 1.05; font-weight: 800; letter-spacing: -0.4px; }
         .topbar .actions {
             display: flex;
             gap: 12px;
@@ -108,57 +132,79 @@
         .btn {
             border: 1px solid transparent;
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 12px 18px;
             font-weight: 800;
+            font-size: 14px;
             cursor: pointer;
             background: #fff;
             color: #2b2b34;
             transition: transform .12s ease, box-shadow .12s ease, border .12s ease;
         }
         .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
+        .btn:not(.btn-primary) { border-color: var(--border); }
         .btn-primary {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--primary), #25c7ff);
             color: #fff;
-            box-shadow: 0 14px 30px rgba(242,92,60,0.35);
+            box-shadow: 0 14px 30px rgba(29, 123, 255, 0.3);
         }
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 14px;
         }
         .card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 18px 18px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: var(--shadow);
             display: grid;
             gap: 8px;
+            transition: transform .14s ease, box-shadow .14s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 36px rgba(23, 44, 85, 0.14);
         }
         .card .label {
             display: flex;
             align-items: center;
             gap: 10px;
             font-weight: 800;
+            font-size: 17px;
             color: #2c2c36;
         }
-        .card .count { font-size: 24px; font-weight: 800; }
-        .card small { color: var(--muted); }
+        .label-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 9px;
+            background: var(--primary-soft);
+            color: var(--primary-strong);
+            border: 1px solid #d8e7ff;
+            display: inline-grid;
+            place-items: center;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+        .card .count { font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -0.4px; }
+        .card small { color: var(--muted); font-size: 14px; }
         .card .trend {
             margin-left: auto;
-            color: var(--accent);
+            color: var(--primary);
             font-size: 13px;
             font-weight: 800;
         }
         .chart-placeholder {
-            background: linear-gradient(120deg, rgba(242,92,60,0.12), rgba(255,255,255,0.9));
+            background: linear-gradient(130deg, rgba(29, 123, 255, 0.12), rgba(37, 199, 255, 0.05) 38%, #fff 100%);
             border-radius: 20px;
-            border: 1px dashed rgba(242,92,60,0.35);
-            height: 240px;
+            border: 1px dashed rgba(29, 123, 255, 0.3);
+            height: 180px;
             display: grid;
             place-items: center;
-            color: var(--muted);
+            color: #45506a;
             font-weight: 700;
+            font-size: 14px;
         }
         .table-card {
             padding: 0;
@@ -168,7 +214,7 @@
             width: 100%;
             border-collapse: collapse;
         }
-        thead { background: #fff7f3; }
+        thead { background: #f3f8ff; }
         th, td {
             padding: 14px 16px;
             border-bottom: 1px solid var(--border);
@@ -176,7 +222,7 @@
             font-size: 14px;
         }
         th { font-weight: 800; color: #3a3a45; }
-        tbody tr:hover { background: #fdf8f6; }
+        tbody tr:hover { background: #f7fbff; }
         .status {
             display: inline-flex;
             align-items: center;
@@ -187,20 +233,27 @@
             font-size: 13px;
         }
         .status.pending { background: #fff4e5; color: #d66b00; }
+        .status.available { background: #eef4ff; color: #4164a8; }
         .status.assigned { background: #e8f5ff; color: #0c7bca; }
+        .status.editing { background: #f0f2ff; color: #3c4ad9; }
         .status.completed { background: #e9f8ee; color: #1a9b52; }
         .status.revision { background: #fff0f2; color: #d62d50; }
+        .status.approved { background: #ecf8f3; color: #157f56; }
+        .status.cancelled { background: #fff0f0; color: #cc3a3a; }
         .avatar {
             width: 34px; height: 34px; border-radius: 50%;
-            background: #f2f4f8;
+            background: #edf3ff;
+            border: 1px solid #d9e7ff;
             display: grid; place-items: center;
-            font-weight: 800; color: #4a4a55;
+            font-weight: 800; color: #334568;
         }
         @media (max-width: 1100px) {
             .layout { grid-template-columns: 1fr; }
             .sidebar { flex-direction: row; flex-wrap: wrap; align-items: center; }
             .nav-group { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); width: 100%; }
             .content { padding: 24px 20px 40px; }
+            .page-title { font-size: 28px; }
+            .card .count { font-size: 36px; }
         }
     </style>
 </head>
@@ -208,7 +261,7 @@
 <div class="layout">
     <aside class="sidebar">
         <div class="brand">
-            <div class="mark">✦</div>
+            <div class="mark">AD</div>
             <span>Admin</span>
         </div>
         <div class="badge-label">SMS - 1</div>
@@ -242,9 +295,9 @@
             $count = function($status) use ($orders) { return collect($orders)->where('status', $status)->count(); };
         @endphp
         <div class="topbar">
-            <div>
-                <div style="font-size:14px; color:var(--muted); font-weight:700;">Welcome back</div>
-                <div style="font-size:24px; font-weight:800;">Francis Kamau</div>
+            <div class="topline">
+                <div class="eyebrow">Welcome back</div>
+                <div class="page-title">{{ session('admin_name', 'Admin') }}</div>
             </div>
             <div class="actions">
                 <a class="btn" href="{{ route('admin.orders') }}">Invoices</a>
@@ -254,20 +307,20 @@
 
         <section class="summary-grid">
             @php $statuses = [
-                ['key'=>'pending','icon'=>'📑','label'=>'Pending','sub'=>'Awaiting writer'],
-                ['key'=>'available','icon'=>'🎧','label'=>'Available','sub'=>'Open to claim'],
-                ['key'=>'assigned','icon'=>'💼','label'=>'Assigned','sub'=>'In progress'],
-                ['key'=>'editing','icon'=>'🖥','label'=>'Editing','sub'=>'QA review'],
-                ['key'=>'completed','icon'=>'🏁','label'=>'Completed','sub'=>'Delivered'],
-                ['key'=>'revision','icon'=>'📅','label'=>'Revision','sub'=>'Awaiting fixes'],
-                ['key'=>'approved','icon'=>'📢','label'=>'Approved','sub'=>'Paid'],
-                ['key'=>'cancelled','icon'=>'↩','label'=>'Cancelled','sub'=>'Refunded'],
+                ['key'=>'pending','code'=>'PD','label'=>'Pending','sub'=>'Awaiting writer'],
+                ['key'=>'available','code'=>'AV','label'=>'Available','sub'=>'Open to claim'],
+                ['key'=>'assigned','code'=>'AS','label'=>'Assigned','sub'=>'In progress'],
+                ['key'=>'editing','code'=>'ED','label'=>'Editing','sub'=>'QA review'],
+                ['key'=>'completed','code'=>'CO','label'=>'Completed','sub'=>'Delivered'],
+                ['key'=>'revision','code'=>'RV','label'=>'Revision','sub'=>'Awaiting fixes'],
+                ['key'=>'approved','code'=>'AP','label'=>'Approved','sub'=>'Paid'],
+                ['key'=>'cancelled','code'=>'CN','label'=>'Cancelled','sub'=>'Refunded'],
             ]; @endphp
             @foreach($statuses as $s)
                 <a class="card" href="{{ route('admin.orders', ['status' => $s['key']]) }}" style="text-decoration:none; color:inherit; cursor:pointer;">
-                    <div class="label"><span>{{ $s['icon'] }}</span> {{ $s['label'] }}</div>
+                    <div class="label"><span class="label-icon">{{ $s['code'] }}</span> {{ $s['label'] }}</div>
                     <div class="count">{{ $count($s['key']) }} orders</div>
-                    <div style="display:flex; align-items:center; gap:10px;"><small>{{ $s['sub'] }}</small><span class="trend">↗</span></div>
+                    <div style="display:flex; align-items:center; gap:10px;"><small>{{ $s['sub'] }}</small><span class="trend">Open</span></div>
                 </a>
             @endforeach
         </section>
