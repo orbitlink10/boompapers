@@ -115,6 +115,29 @@ if (!function_exists('findWriterByEmail')) {
     }
 }
 
+if (!function_exists('currentWriterProfile')) {
+    function currentWriterProfile(): array
+    {
+        $writerId = (int) (session('writer_id') ?? 0);
+        $writerName = trim((string) (session('writer_name') ?? ''));
+        $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
+        $writers = loadWriters();
+        $writerRecord = $writerEmail !== '' ? findWriterByEmail($writers, $writerEmail) : null;
+
+        if (!$writerRecord && $writerId > 0) {
+            $writerRecord = collect($writers)->firstWhere('id', $writerId);
+        }
+
+        return [
+            'id' => $writerRecord['id'] ?? $writerId,
+            'name' => trim((string) ($writerRecord['name'] ?? $writerName)) ?: 'Writer',
+            'email' => trim((string) ($writerRecord['email'] ?? $writerEmail)) ?: 'writer@example.com',
+            'qualification' => trim((string) ($writerRecord['qualification'] ?? session('writer_qualification', ''))),
+            'profile_picture' => $writerRecord['profile_picture'] ?? session('writer_profile_picture'),
+        ];
+    }
+}
+
 if (!function_exists('durationLabelFromSeconds')) {
     function durationLabelFromSeconds(int $seconds): string
     {
@@ -686,18 +709,6 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
     ];
 
     $activeMenu = collect($menuItems)->firstWhere('key', $menu) ?? $menuItems[0];
-    $writerRecord = findWriterByEmail(loadWriters(), $writerEmail);
-    if (!$writerRecord && $writerId > 0) {
-        $writerRecord = collect(loadWriters())->firstWhere('id', $writerId);
-    }
-
-    $writerProfile = [
-        'id' => $writerRecord['id'] ?? $writerId,
-        'name' => trim((string) ($writerRecord['name'] ?? $writerName)) ?: 'Writer',
-        'email' => trim((string) ($writerRecord['email'] ?? $writerEmail)) ?: 'writer@example.com',
-        'qualification' => trim((string) ($writerRecord['qualification'] ?? session('writer_qualification', ''))),
-        'profile_picture' => $writerRecord['profile_picture'] ?? session('writer_profile_picture'),
-    ];
 
     $orders = $ordersCollection
         ->filter(function ($order) use ($menu, $matchesMenu) {
@@ -764,9 +775,18 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
         'menu' => $menu,
         'menuItems' => $menuItems,
         'activeMenu' => $activeMenu,
-        'writerProfile' => $writerProfile,
     ]);
 })->name('writer.dashboard');
+
+Route::get('/writer/profile', function () {
+    if (!session('writer_logged_in')) {
+        return redirect()->route('writer.auth', ['tab' => 'existing']);
+    }
+
+    return view('writer.profile', [
+        'writerProfile' => currentWriterProfile(),
+    ]);
+})->name('writer.profile');
 
 Route::get('/writer/orders/{id}', function ($id) {
     if (!session('writer_logged_in')) {
