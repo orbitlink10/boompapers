@@ -454,6 +454,7 @@
         .order-id {
             font-weight: 800;
             color: #2f2f2f;
+            text-decoration: none;
         }
 
         .order-title {
@@ -461,6 +462,16 @@
             font-weight: 800;
             color: #232323;
             letter-spacing: -0.5px;
+        }
+
+        .order-link {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .order-link:hover .order-title,
+        .order-id:hover {
+            color: #4f61c2;
         }
 
         .meta {
@@ -842,14 +853,17 @@
                     <tbody>
                         @forelse($orders as $order)
                             <tr>
-                                <td><span class="order-id">#{{ $order['id'] }}</span></td>
                                 <td>
-                                    <div class="order-title">{{ $order['title'] }}</div>
-                                    <div class="meta">{{ $order['subject'] }}</div>
+                                    <a class="order-id" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">#{{ $order['id'] }}</a>
+                                </td>
+                                <td>
+                                    <a class="order-link" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">
+                                        <div class="order-title">{{ $order['title'] }}</div>
+                                        <div class="meta">{{ $order['subject'] }}</div>
+                                    </a>
                                 </td>
                                 <td>
                                     <div>{{ $order['client_name'] }}</div>
-                                    <div class="meta">{{ $order['client_email'] }}</div>
                                 </td>
                                 <td>{{ $order['type'] }}</td>
                                 <td>{{ $order['pages'] }}</td>

@@ -768,6 +768,61 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
     ]);
 })->name('writer.dashboard');
 
+Route::get('/writer/orders/{id}', function ($id) {
+    if (!session('writer_logged_in')) {
+        return redirect()->route('writer.auth', ['tab' => 'existing']);
+    }
+
+    $writerId = (int) (session('writer_id') ?? 0);
+    $writerName = trim((string) (session('writer_name') ?? ''));
+    $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
+    $order = collect(loadOrders())->firstWhere('id', (int) $id);
+
+    if (!$order || !is_array($order)) {
+        return redirect()->route('writer.dashboard')->with('error', 'Order not found.');
+    }
+
+    $assignedId = (int) ($order['writer_id'] ?? 0);
+    $assignedName = trim((string) ($order['writer_name'] ?? ''));
+    $assignedEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+    $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+
+    $isMine = $writerId > 0 && $assignedId === $writerId
+        || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0)
+        || ($writerEmail !== '' && $assignedEmail !== '' && strcasecmp($assignedEmail, $writerEmail) === 0);
+
+    $isAvailable = $assignedId <= 0
+        && $assignedName === ''
+        && $assignedEmail === ''
+        && in_array($status, ['pending', 'available'], true);
+
+    if (!$isMine && !$isAvailable) {
+        return redirect()->route('writer.dashboard')->with('error', 'You cannot view that order.');
+    }
+
+    $files = collect(session('order_files', []))
+        ->where('order_id', (int) $id)
+        ->values()
+        ->all();
+
+    $statusOptions = [
+        'assigned' => 'Assigned',
+        'inprogress' => 'In Progress',
+        'editing' => 'Editing',
+        'revision' => 'Revision',
+        'completed' => 'Completed',
+        'approved' => 'Approved',
+    ];
+
+    return view('writer.order-show', [
+        'order' => $order,
+        'files' => $files,
+        'canTake' => $isAvailable,
+        'isAssignedToCurrent' => $isMine,
+        'statusOptions' => $statusOptions,
+    ]);
+})->name('writer.order.show');
+
 Route::post('/writer/orders/{id}/claim', function (\Illuminate\Http\Request $request, $id) {
     if (!session('writer_logged_in')) {
         return redirect()->route('writer.auth', ['tab' => 'existing']);
