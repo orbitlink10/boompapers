@@ -524,6 +524,52 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
     return back()->with('assigned', 'Order assigned successfully.');
 })->name('admin.orders.assign');
 
+Route::delete('/admin/orders/{id}', function ($id) {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $targetId = (int) $id;
+    $orders = loadOrders();
+    $exists = collect($orders)->contains(
+        fn ($order) => (int) ($order['id'] ?? 0) === $targetId
+    );
+
+    if (!$exists) {
+        return back()->with('deleted', 'Order not found.');
+    }
+
+    $remainingOrders = collect($orders)
+        ->reject(fn ($order) => (int) ($order['id'] ?? 0) === $targetId)
+        ->values()
+        ->all();
+
+    saveOrders($remainingOrders);
+
+    $storedFiles = collect(session('order_files', []));
+    $filesToDelete = $storedFiles->filter(
+        fn ($file) => (int) ($file['order_id'] ?? 0) === $targetId
+    );
+    $keptFiles = $storedFiles->reject(
+        fn ($file) => (int) ($file['order_id'] ?? 0) === $targetId
+    )->values()->all();
+
+    foreach ($filesToDelete as $file) {
+        $name = basename((string) ($file['path'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $fullPath = storage_path('app/uploads/' . $name);
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
+    }
+
+    session(['order_files' => $keptFiles]);
+
+    return back()->with('deleted', 'Order deleted successfully.');
+})->name('admin.orders.delete');
+
 Route::get('/admin/orders/{id}', function ($id) {
     if (!session('admin_logged_in')) {
         return redirect()->route('admin.login');

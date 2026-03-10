@@ -44,6 +44,9 @@
         select{padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
         .btn{border:none;border-radius:10px;padding:8px 12px;font-weight:900;cursor:pointer;}
         .btn-primary{background:var(--accent);color:#fff;}
+        .btn-danger{background:#c53030;color:#fff;}
+        .action-stack{display:grid;gap:8px;}
+        .delete-form{display:inline-block;}
         @media(max-width:1000px){.layout{grid-template-columns:1fr;} .topbar{flex-direction:column;align-items:flex-start;} }
     </style>
 </head>
@@ -93,6 +96,11 @@
                 {{ session('assigned') }}
             </div>
         @endif
+        @if(session('deleted'))
+            <div style="background:#fde9e9; color:#9b1c1c; padding:10px 12px; border-radius:10px; font-weight:800;">
+                {{ session('deleted') }}
+            </div>
+        @endif
 
         <div class="card table-card" style="background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden;">
             <table>
@@ -121,34 +129,43 @@
                         <td>{{ $order['deadline'] ?? '48 Hours' }}</td>
                         <td><span class="status {{ $order['status'] ?? 'pending' }} status-pill" data-order="{{ $order['id'] }}">{{ ucfirst($order['status'] ?? 'pending') }}</span></td>
                         <td>
-                            <form class="assign-form" action="{{ route('admin.orders.assign', ['id'=>$order['id']]) }}" method="POST">
-                                @csrf
-                                <select name="writer_id" required>
-                                    <option value="">Select writer</option>
-                                    @foreach($writers as $w)
-                                        <option value="{{ $w['id'] }}" {{ ($order['writer_id'] ?? null) == $w['id'] ? 'selected' : '' }}>{{ $w['name'] }}</option>
-                                    @endforeach
-                                </select>
-                                <input type="hidden" name="writer_name" id="writer_name_{{ $order['id'] }}" value="{{ $order['writer_name'] ?? '' }}">
-                                <select name="status" class="status-select" data-order="{{ $order['id'] }}">
-                                    <option value="pending" {{ ($order['status'] ?? '')==='pending' ? 'selected' : '' }}>Pending</option>
-                                    <option value="available" {{ ($order['status'] ?? '')==='available' ? 'selected' : '' }}>Available</option>
-                                    <option value="assigned" {{ ($order['status'] ?? '')==='assigned' ? 'selected' : '' }}>Assigned</option>
-                                    <option value="inprogress" {{ ($order['status'] ?? '')==='inprogress' ? 'selected' : '' }}>In Progress</option>
-                                    <option value="editing" {{ ($order['status'] ?? '')==='editing' ? 'selected' : '' }}>Editing</option>
-                                    <option value="revision" {{ ($order['status'] ?? '')==='revision' ? 'selected' : '' }}>Revision</option>
-                                    <option value="completed" {{ ($order['status'] ?? '')==='completed' ? 'selected' : '' }}>Completed</option>
-                                    <option value="approved" {{ ($order['status'] ?? '')==='approved' ? 'selected' : '' }}>Approved</option>
-                                    <option value="cancelled" {{ ($order['status'] ?? '')==='cancelled' ? 'selected' : '' }}>Cancelled</option>
-                                </select>
-                                <button type="submit" class="btn btn-primary">Assign</button>
-                            </form>
+                            <div class="action-stack">
+                                <form class="assign-form" action="{{ route('admin.orders.assign', ['id'=>$order['id']]) }}" method="POST">
+                                    @csrf
+                                    <select name="writer_id" required>
+                                        <option value="">Select writer</option>
+                                        @foreach($writers as $w)
+                                            <option value="{{ $w['id'] }}" {{ ($order['writer_id'] ?? null) == $w['id'] ? 'selected' : '' }}>{{ $w['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input type="hidden" name="writer_name" id="writer_name_{{ $order['id'] }}" value="{{ $order['writer_name'] ?? '' }}">
+                                    <select name="status" class="status-select" data-order="{{ $order['id'] }}">
+                                        <option value="pending" {{ ($order['status'] ?? '')==='pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="available" {{ ($order['status'] ?? '')==='available' ? 'selected' : '' }}>Available</option>
+                                        <option value="assigned" {{ ($order['status'] ?? '')==='assigned' ? 'selected' : '' }}>Assigned</option>
+                                        <option value="inprogress" {{ ($order['status'] ?? '')==='inprogress' ? 'selected' : '' }}>In Progress</option>
+                                        <option value="editing" {{ ($order['status'] ?? '')==='editing' ? 'selected' : '' }}>Editing</option>
+                                        <option value="revision" {{ ($order['status'] ?? '')==='revision' ? 'selected' : '' }}>Revision</option>
+                                        <option value="completed" {{ ($order['status'] ?? '')==='completed' ? 'selected' : '' }}>Completed</option>
+                                        <option value="approved" {{ ($order['status'] ?? '')==='approved' ? 'selected' : '' }}>Approved</option>
+                                        <option value="cancelled" {{ ($order['status'] ?? '')==='cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Assign</button>
+                                </form>
+                                <form class="delete-form" action="{{ route('admin.orders.delete', ['id' => $order['id']]) }}" method="POST" onsubmit="return confirm('Delete this order permanently?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     <script>
                         (() => {
-                            const sel = document.currentScript.previousElementSibling.querySelector('select[name="writer_id"]');
-                            const hidden = document.currentScript.previousElementSibling.querySelector('input[name="writer_name"]');
+                            const row = document.currentScript.previousElementSibling;
+                            const form = row ? row.querySelector('form.assign-form') : null;
+                            const sel = form ? form.querySelector('select[name="writer_id"]') : null;
+                            const hidden = form ? form.querySelector('input[name="writer_name"]') : null;
                             sel?.addEventListener('change', () => {
                                 const selected = sel.options[sel.selectedIndex];
                                 hidden.value = selected ? selected.textContent : '';
