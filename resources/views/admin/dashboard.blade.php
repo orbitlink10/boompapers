@@ -187,7 +187,7 @@
             font-weight: 800;
             letter-spacing: 0.2px;
         }
-        .card .count { font-size: 26px; line-height: 1.1; font-weight: 800; letter-spacing: -0.1px; }
+        .card .count { font-size: 12px; line-height: 1.2; font-weight: 800; letter-spacing: -0.1px; }
         .card small { color: var(--muted); font-size: 12px; }
         .card .trend {
             margin-left: auto;
@@ -253,7 +253,7 @@
             .nav-group { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); width: 100%; }
             .content { padding: 24px 20px 40px; }
             .page-title { font-size: 24px; }
-            .card .count { font-size: 22px; }
+            .card .count { font-size: 12px; }
         }
     </style>
 </head>
