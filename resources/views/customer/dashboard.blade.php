@@ -254,6 +254,7 @@
             $count = fn($status) => collect($orders)->where('status', $status)->count();
         @endphp
         <div class="chips">
+            <div class="chip">Assigned <span class="count">({{ $count('assigned') }})</span></div>
             <div class="chip">Pending <span class="count">({{ $count('pending') }})</span></div>
             <div class="chip">Bidding <span class="count">({{ $count('bidding') }})</span></div>
             <div class="chip">In Progress <span class="count">({{ $count('inprogress') }})</span></div>
@@ -285,11 +286,16 @@
                                 {{ $order['title'] }}
                             </a>
                             <br><small style="color:var(--muted); font-weight:700;">{{ $order['pages'] }} Pg(s)</small>
+                            @if(!empty($order['client_notice']))
+                                <div style="margin-top:8px; padding:8px 10px; border-radius:10px; background:#edf7ff; color:#145da0; font-size:12px; font-weight:800;">
+                                    {{ $order['client_notice'] }}
+                                </div>
+                            @endif
                         </td>
                         <td>{{ $order['deadline'] ?? '48 Hours' }}</td>
                         <td>USD {{ number_format($order['cost'] ?? 0, 2) }}</td>
-                        <td>#0</td>
-                        <td><span class="status {{ $order['status'] }}">Pending</span></td>
+                        <td>{{ $order['writer_name'] ?? 'Unassigned' }}</td>
+                        <td><span class="status {{ $order['status'] }}">{{ ucwords(str_replace('inprogress', 'in progress', $order['status'] ?? 'pending')) }}</span></td>
                     </tr>
                 @empty
                     <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted); font-weight:800;">No orders yet</td></tr>

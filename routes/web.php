@@ -553,11 +553,13 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
     $writerId = (int) (session('writer_id') ?? 0);
     $writerName = trim((string) (session('writer_name') ?? ''));
     $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
-    $scope = $request->query('scope', 'mine');
-    if (!in_array($scope, ['mine', 'available', 'all'], true)) {
-        $scope = 'mine';
+    $menu = strtolower(trim((string) $request->query('menu', 'available')));
+    if (!in_array($menu, ['available', 'assigned', 'revision', 'completed'], true)) {
+        $menu = 'available';
     }
 
+    $activeAssignedStatuses = ['assigned', 'inprogress', 'editing'];
+    $completedStatuses = ['completed', 'approved'];
     $statusOptions = [
         'assigned' => 'Assigned',
         'inprogress' => 'In Progress',
@@ -578,35 +580,83 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             || ($writerEmail !== '' && $assignedEmail !== '' && strcasecmp($assignedEmail, $writerEmail) === 0);
     };
 
-    $canClaim = function (array $order) {
+    $isAvailable = function (array $order) {
         $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
         $assignedId = (int) ($order['writer_id'] ?? 0);
         $assignedName = trim((string) ($order['writer_name'] ?? ''));
+        $assignedEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
 
-        return $assignedId <= 0 && $assignedName === '' && in_array($status, ['pending', 'available'], true);
+        return $assignedId <= 0
+            && $assignedName === ''
+            && $assignedEmail === ''
+            && in_array($status, ['pending', 'available'], true);
     };
 
-    $mineCount = $ordersCollection->filter($isMine)->count();
-    $availableCount = $ordersCollection->filter($canClaim)->count();
+    $matchesMenu = function (array $order, string $selectedMenu) use ($isMine, $isAvailable, $activeAssignedStatuses, $completedStatuses) {
+        $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+
+        if ($selectedMenu === 'available') {
+            return $isAvailable($order);
+        }
+
+        if (!$isMine($order)) {
+            return false;
+        }
+
+        if ($selectedMenu === 'assigned') {
+            return in_array($status, $activeAssignedStatuses, true);
+        }
+
+        if ($selectedMenu === 'revision') {
+            return $status === 'revision';
+        }
+
+        return in_array($status, $completedStatuses, true);
+    };
+
+    $menuItems = [
+        [
+            'key' => 'available',
+            'short' => 'AV',
+            'label' => 'Available',
+            'description' => 'Open orders ready to take.',
+            'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'available'))->count(),
+        ],
+        [
+            'key' => 'assigned',
+            'short' => 'AS',
+            'label' => 'Assigned',
+            'description' => 'Orders currently on your desk.',
+            'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'assigned'))->count(),
+        ],
+        [
+            'key' => 'revision',
+            'short' => 'RV',
+            'label' => 'Revision',
+            'description' => 'Orders waiting for changes.',
+            'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'revision'))->count(),
+        ],
+        [
+            'key' => 'completed',
+            'short' => 'CM',
+            'label' => 'Completed',
+            'description' => 'Finished work and approvals.',
+            'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'completed'))->count(),
+        ],
+    ];
+
+    $activeMenu = collect($menuItems)->firstWhere('key', $menu) ?? $menuItems[0];
 
     $orders = $ordersCollection
-        ->filter(function (array $order) use ($scope, $isMine, $canClaim) {
+        ->filter(function ($order) use ($menu, $matchesMenu) {
             if (!is_array($order)) {
                 return false;
             }
 
-            if ($scope === 'mine') {
-                return $isMine($order);
-            }
-
-            if ($scope === 'available') {
-                return $canClaim($order);
-            }
-
-            return true;
+            return $matchesMenu($order, $menu);
         })
         ->sortByDesc(fn ($order) => (int) ($order['id'] ?? 0))
-        ->map(function (array $order) use ($writerId, $writerName, $writerEmail, $statusOptions, $canClaim) {
+        ->map(function (array $order) use ($writerId, $writerName, $writerEmail, $statusOptions, $isAvailable) {
             $writerDueAt = writerDueAtForOrder($order);
             $postedDeadlineSeconds = deadlineSecondsFor($order['deadline'] ?? null);
             $adjustedSeconds = $postedDeadlineSeconds !== null ? max(0, $postedDeadlineSeconds - (4 * 60 * 60)) : null;
@@ -642,8 +692,9 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
                 'writer_deadline' => remainingDeadlineLabelFor($writerDueAt, $fallbackDeadline),
                 'writer_deadline_fallback' => $fallbackDeadline,
                 'is_assigned_to_current' => $isAssignedToCurrent,
-                'can_claim' => $canClaim($order),
+                'can_take' => $isAvailable($order),
                 'status_options' => $statusOptions,
+                'status_label' => $status === 'inprogress' ? 'In Progress' : ucfirst($status),
                 'files_count' => count($files),
             ];
         })
@@ -652,12 +703,9 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
 
     return view('writer.dashboard', [
         'orders' => $orders,
-        'scope' => $scope,
-        'counts' => [
-            'mine' => $mineCount,
-            'available' => $availableCount,
-            'all' => $ordersCollection->count(),
-        ],
+        'menu' => $menu,
+        'menuItems' => $menuItems,
+        'activeMenu' => $activeMenu,
     ]);
 })->name('writer.dashboard');
 
@@ -699,10 +747,15 @@ Route::post('/writer/orders/{id}/claim', function (\Illuminate\Http\Request $req
             return back()->with('error', 'Only available orders can be claimed right now.');
         }
 
+        $noticeTime = now()->toIso8601String();
+        $displayWriter = $writerName !== '' ? $writerName : 'A writer';
         $order['writer_id'] = $writerId;
         $order['writer_name'] = $writerName;
         $order['writer_email'] = $writerEmail;
         $order['status'] = 'assigned';
+        $order['writer_taken_at'] = $noticeTime;
+        $order['client_notice'] = $displayWriter . ' has taken your order. Work is now in progress.';
+        $order['client_notice_at'] = $noticeTime;
         $updated = true;
         break;
     }
@@ -716,7 +769,8 @@ Route::post('/writer/orders/{id}/claim', function (\Illuminate\Http\Request $req
     }
 
     saveOrders($orders);
-    return back()->with('status', 'Order claimed successfully.');
+    return redirect()->route('writer.dashboard', ['menu' => 'assigned'])
+        ->with('status', 'Order taken successfully. Client notified immediately.');
 })->name('writer.order.claim');
 
 Route::post('/writer/orders/{id}/status', function (\Illuminate\Http\Request $request, $id) {
@@ -753,8 +807,19 @@ Route::post('/writer/orders/{id}/status', function (\Illuminate\Http\Request $re
             return back()->with('error', 'You can only update orders assigned to you.');
         }
 
+        $displayWriter = $assignedName !== '' ? $assignedName : ($writerName !== '' ? $writerName : 'Your writer');
+        $noticeTime = now()->toIso8601String();
         $order['status'] = $newStatus;
-        $order['writer_last_update_at'] = now()->toIso8601String();
+        $order['writer_last_update_at'] = $noticeTime;
+
+        if ($newStatus === 'revision') {
+            $order['client_notice'] = $displayWriter . ' moved your order to revision.';
+        } elseif (in_array($newStatus, ['completed', 'approved'], true)) {
+            $order['client_notice'] = $displayWriter . ' marked your order as completed.';
+        } else {
+            $order['client_notice'] = $displayWriter . ' updated your order status to ' . ($newStatus === 'inprogress' ? 'in progress' : $newStatus) . '.';
+        }
+        $order['client_notice_at'] = $noticeTime;
         break;
     }
 
@@ -763,7 +828,15 @@ Route::post('/writer/orders/{id}/status', function (\Illuminate\Http\Request $re
     }
 
     saveOrders($orders);
-    return back()->with('status', 'Order status updated.');
+    $targetMenu = 'assigned';
+    if ($newStatus === 'revision') {
+        $targetMenu = 'revision';
+    } elseif (in_array($newStatus, ['completed', 'approved'], true)) {
+        $targetMenu = 'completed';
+    }
+
+    return redirect()->route('writer.dashboard', ['menu' => $targetMenu])
+        ->with('status', 'Order status updated.');
 })->name('writer.order.status');
 
 Route::post('/writer/orders/{id}/files', function (\Illuminate\Http\Request $request, $id) {

@@ -119,13 +119,104 @@
             padding: 8px 10px;
             font-weight: 700;
             font-size: 13px;
-            white-space: nowrap;
+            white-space: normal;
         }
         .table-wrap {
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 14px;
             overflow: hidden;
+        }
+        .workspace {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+        .workspace-main {
+            display: grid;
+            gap: 14px;
+        }
+        .submenu-panel {
+            position: sticky;
+            top: 84px;
+            border-radius: 24px;
+            padding: 24px 18px;
+            background: linear-gradient(180deg, #0d2f69, #14488e);
+            color: #f6f8ff;
+            box-shadow: 0 22px 45px rgba(20, 72, 142, 0.24);
+        }
+        .submenu-eyebrow {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.1px;
+            opacity: 0.75;
+            font-weight: 800;
+        }
+        .submenu-title {
+            margin: 8px 0 18px;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+        .submenu-list {
+            display: grid;
+            gap: 10px;
+        }
+        .submenu-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: #dfe8ff;
+            padding: 12px;
+            border-radius: 18px;
+            border: 1px solid transparent;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .submenu-link:hover,
+        .submenu-link.active {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateX(2px);
+        }
+        .submenu-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            flex-shrink: 0;
+        }
+        .submenu-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 800;
+        }
+        .submenu-copy {
+            display: block;
+            margin-top: 3px;
+            font-size: 12px;
+            color: rgba(223, 232, 255, 0.82);
+            font-weight: 600;
+        }
+        .submenu-count {
+            margin-left: auto;
+            min-width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 0 10px;
         }
         table {
             width: 100%;
@@ -196,27 +287,6 @@
             color: var(--muted);
             font-weight: 800;
         }
-        .scope-switch {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .scope-link {
-            text-decoration: none;
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            padding: 7px 12px;
-            color: #2a3346;
-            background: #fff;
-            font-weight: 800;
-            font-size: 13px;
-        }
-        .scope-link.active {
-            border-color: #1d7bff;
-            color: #1d7bff;
-            background: #eff6ff;
-        }
         .flash {
             margin: 0;
             border-radius: 10px;
@@ -260,13 +330,43 @@
             background: #f2f7ff;
             border-color: #d7e7ff;
         }
+        .panel-head {
+            padding: 18px 18px 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .panel-head h2 {
+            margin: 4px 0 0;
+            font-size: 28px;
+            letter-spacing: -0.3px;
+        }
+        .panel-head p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-weight: 600;
+        }
+        .panel-kicker {
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #6781a7;
+            font-weight: 800;
+        }
         @media (max-width: 1050px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+            .submenu-panel {
+                position: static;
+            }
             .intro {
                 flex-direction: column;
                 align-items: flex-start;
             }
             .title { font-size: 18px; }
-            .scope-switch { width: 100%; }
         }
     </style>
 </head>
@@ -282,14 +382,6 @@
     </header>
 
     <main>
-        <section class="intro">
-            <div>
-                <h1>{{ session('writer_name', 'Writer') }}</h1>
-                <p>All client-posted orders are shown here. Price is hidden from writer accounts.</p>
-            </div>
-            <div class="note">Writer deadline = Client deadline minus 4 hours</div>
-        </section>
-
         @if(session('status'))
             <p class="flash success">{{ session('status') }}</p>
         @endif
@@ -300,96 +392,119 @@
             <p class="flash success">{{ session('uploaded') }}</p>
         @endif
 
-        <section class="table-wrap">
-            <div style="padding: 14px 16px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-                <div class="scope-switch">
-                    <a class="scope-link {{ ($scope ?? 'mine') === 'mine' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['scope' => 'mine']) }}">
-                        My Orders ({{ $counts['mine'] ?? 0 }})
-                    </a>
-                    <a class="scope-link {{ ($scope ?? '') === 'available' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['scope' => 'available']) }}">
-                        Available ({{ $counts['available'] ?? 0 }})
-                    </a>
-                    <a class="scope-link {{ ($scope ?? '') === 'all' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['scope' => 'all']) }}">
-                        All ({{ $counts['all'] ?? 0 }})
-                    </a>
+        <div class="workspace">
+            <aside class="submenu-panel">
+                <div class="submenu-eyebrow">Writer Workspace</div>
+                <div class="submenu-title">Order Menus</div>
+                <div class="submenu-list">
+                    @foreach($menuItems as $item)
+                        <a class="submenu-link {{ ($menu ?? 'available') === $item['key'] ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => $item['key']]) }}">
+                            <span class="submenu-icon">{{ $item['short'] }}</span>
+                            <span>
+                                <span class="submenu-label">{{ $item['label'] }}</span>
+                                <span class="submenu-copy">{{ $item['description'] }}</span>
+                            </span>
+                            <span class="submenu-count">{{ $item['count'] }}</span>
+                        </a>
+                    @endforeach
                 </div>
-                <div style="font-weight: 800; color:var(--muted);">Filter by scope to focus your workspace.</div>
-            </div>
-        </section>
+            </aside>
 
-        <section class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Order</th>
-                        <th>Client</th>
-                        <th>Type</th>
-                        <th>Pages</th>
-                        <th>Deadline</th>
-                        <th>Status</th>
-                        <th>Assigned</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($orders as $order)
-                        <tr>
-                            <td><span class="order-id">#{{ $order['id'] }}</span></td>
-                            <td>
-                                <div class="title">{{ $order['title'] }}</div>
-                                <div class="meta">{{ $order['subject'] }}</div>
-                            </td>
-                            <td>
-                                <div>{{ $order['client_name'] }}</div>
-                                <div class="meta">{{ $order['client_email'] }}</div>
-                            </td>
-                            <td>{{ $order['type'] }}</td>
-                            <td>{{ $order['pages'] }}</td>
-                            <td>
-                                <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
-                                    {{ $order['writer_deadline'] }}
-                                </span>
-                             </td>
-                             <td><span class="status {{ $order['status'] }}">{{ $order['status'] }}</span></td>
-                             <td>{{ $order['assigned_writer'] }}</td>
-                             <td>
-                                 <div class="order-actions">
-                                    @if($order['can_claim'])
-                                        <form action="{{ route('writer.order.claim', ['id' => $order['id']]) }}" method="POST">
-                                            @csrf
-                                            <button class="btn btn-success" type="submit">Claim Order</button>
-                                        </form>
-                                    @elseif($order['is_assigned_to_current'])
-                                        <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
-                                            @csrf
-                                            <select name="status" aria-label="Update order status">
-                                                @foreach($order['status_options'] as $key => $value)
-                                                    <option value="{{ $key }}" {{ ($order['status'] === $key) ? 'selected' : '' }}>{{ $value }}</option>
-                                                @endforeach
-                                            </select>
-                                            <button class="btn" type="submit">Update Status</button>
-                                        </form>
-                                        <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
-                                            @csrf
-                                            <input type="file" name="files[]" multiple>
-                                            <button class="btn btn-light" type="submit">Upload Files</button>
-                                        </form>
-                                        @if(($order['files_count'] ?? 0) > 0)
-                                            <span style="font-size:12px; font-weight:800; color:#1f6fb5">{{ $order['files_count'] }} file(s)</span>
-                                        @endif
-                                    @else
-                                        <span style="color: var(--muted); font-weight: 800; font-size: 13px;">Read only</span>
-                                    @endif
-                                 </div>
-                             </td>
-                         </tr>
-                    @empty
-                        <tr><td colspan="9" class="empty">No client-posted orders yet.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </section>
+            <div class="workspace-main">
+                <section class="intro">
+                    <div>
+                        <h1>{{ session('writer_name', 'Writer') }}</h1>
+                        <p>Orders move between Available, Assigned, Revision, and Completed as you work.</p>
+                    </div>
+                    <div class="note">Writer deadline = Client deadline minus 4 hours</div>
+                </section>
+
+                <section class="table-wrap">
+                    <div class="panel-head">
+                        <div>
+                            <div class="panel-kicker">Current Queue</div>
+                            <h2>{{ $activeMenu['label'] ?? 'Available' }}</h2>
+                            <p>{{ $activeMenu['description'] ?? 'Open orders ready to take.' }}</p>
+                        </div>
+                        @if(($menu ?? 'available') === 'available')
+                            <div class="note">Take an order to move it into Assigned and notify the client immediately.</div>
+                        @endif
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Order</th>
+                                <th>Client</th>
+                                <th>Type</th>
+                                <th>Pages</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Assigned</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($orders as $order)
+                                <tr>
+                                    <td><span class="order-id">#{{ $order['id'] }}</span></td>
+                                    <td>
+                                        <div class="title">{{ $order['title'] }}</div>
+                                        <div class="meta">{{ $order['subject'] }}</div>
+                                    </td>
+                                    <td>
+                                        <div>{{ $order['client_name'] }}</div>
+                                        <div class="meta">{{ $order['client_email'] }}</div>
+                                    </td>
+                                    <td>{{ $order['type'] }}</td>
+                                    <td>{{ $order['pages'] }}</td>
+                                    <td>
+                                        <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
+                                            {{ $order['writer_deadline'] }}
+                                        </span>
+                                    </td>
+                                    <td><span class="status {{ $order['status'] }}">{{ $order['status_label'] }}</span></td>
+                                    <td>{{ $order['assigned_writer'] }}</td>
+                                    <td>
+                                        <div class="order-actions">
+                                            @if($order['can_take'])
+                                                <form action="{{ route('writer.order.claim', ['id' => $order['id']]) }}" method="POST">
+                                                    @csrf
+                                                    <button class="btn btn-success" type="submit">Take Order</button>
+                                                </form>
+                                            @elseif($order['is_assigned_to_current'])
+                                                <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
+                                                    @csrf
+                                                    <select name="status" aria-label="Update order status">
+                                                        @foreach($order['status_options'] as $key => $value)
+                                                            <option value="{{ $key }}" {{ ($order['status'] === $key) ? 'selected' : '' }}>{{ $value }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button class="btn" type="submit">Update Status</button>
+                                                </form>
+                                                <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="file" name="files[]" multiple>
+                                                    <button class="btn btn-light" type="submit">Upload Files</button>
+                                                </form>
+                                                @if(($order['files_count'] ?? 0) > 0)
+                                                    <span style="font-size:12px; font-weight:800; color:#1f6fb5">{{ $order['files_count'] }} file(s)</span>
+                                                @endif
+                                            @else
+                                                <span style="color: var(--muted); font-weight: 800; font-size: 13px;">Not available</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="9" class="empty">No orders in this menu right now.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+        </div>
     </main>
 
     <script>
