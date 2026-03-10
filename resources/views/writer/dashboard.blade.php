@@ -200,118 +200,6 @@
             white-space: nowrap;
         }
 
-        .profile-section {
-            display: grid;
-            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-            gap: 16px;
-        }
-
-        .profile-card {
-            background: var(--panel);
-            border: 1px solid #e5e5e5;
-            border-radius: 22px;
-            padding: 22px;
-            box-shadow: 0 18px 34px rgba(0, 0, 0, 0.05);
-            display: grid;
-            gap: 18px;
-        }
-
-        .profile-card-head {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .profile-avatar {
-            width: 86px;
-            height: 86px;
-            border-radius: 24px;
-            object-fit: cover;
-            border: 1px solid #e6e6e6;
-            background: #eceff9;
-            flex-shrink: 0;
-        }
-
-        .profile-avatar-fallback {
-            display: grid;
-            place-items: center;
-            font-size: 28px;
-            font-weight: 800;
-            color: #4e60bf;
-        }
-
-        .profile-name {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.6px;
-        }
-
-        .profile-tag {
-            margin-top: 6px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border-radius: 999px;
-            padding: 8px 12px;
-            background: var(--accent-soft);
-            color: #5b69c4;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .profile-list {
-            display: grid;
-            gap: 10px;
-        }
-
-        .profile-row {
-            display: grid;
-            gap: 4px;
-            padding: 12px 14px;
-            border-radius: 16px;
-            background: #fafafa;
-            border: 1px solid #ececec;
-        }
-
-        .profile-row-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.1px;
-            color: #8f8f8f;
-            font-weight: 800;
-        }
-
-        .profile-row-value {
-            font-size: 15px;
-            font-weight: 700;
-            color: #2f2f2f;
-            word-break: break-word;
-        }
-
-        .profile-copy-card {
-            background: var(--panel);
-            border: 1px solid #e5e5e5;
-            border-radius: 22px;
-            padding: 22px;
-            box-shadow: 0 18px 34px rgba(0, 0, 0, 0.05);
-            display: grid;
-            align-content: center;
-            gap: 12px;
-        }
-
-        .profile-copy-card h3 {
-            margin: 0;
-            font-size: 28px;
-            letter-spacing: -0.8px;
-        }
-
-        .profile-copy-card p {
-            margin: 0;
-            color: var(--muted);
-            font-weight: 600;
-            max-width: 560px;
-        }
-
         .flash {
             border-radius: 14px;
             padding: 12px 14px;
@@ -601,10 +489,6 @@
         }
 
         @media (max-width: 1220px) {
-            .profile-section {
-                grid-template-columns: 1fr;
-            }
-
             .summary-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -656,21 +540,6 @@
         $assignedCount = $assignedItem['count'] ?? 0;
         $revisionCount = $revisionItem['count'] ?? 0;
         $completedCount = $completedItem['count'] ?? 0;
-        $profile = $writerProfile ?? [];
-        $profileName = trim((string) ($profile['name'] ?? 'Writer'));
-        $profileEmail = trim((string) ($profile['email'] ?? 'writer@example.com'));
-        $profileQualification = trim((string) ($profile['qualification'] ?? ''));
-        $profilePicture = trim((string) ($profile['profile_picture'] ?? ''));
-        $profileId = $profile['id'] ?? session('writer_id');
-        $initialParts = preg_split('/\s+/', $profileName) ?: [];
-        $initials = collect($initialParts)
-            ->filter()
-            ->take(2)
-            ->map(fn ($part) => strtoupper(substr($part, 0, 1)))
-            ->implode('');
-        if ($initials === '') {
-            $initials = 'WR';
-        }
     @endphp
     <div class="app-shell">
         <aside class="sidebar">
@@ -723,14 +592,18 @@
                 </div>
 
                 <div class="nav-section">
-                    <div class="nav-label">Links</div>
-                    <a class="nav-link" href="#writer-profile">
+                    <div class="nav-label">Profile</div>
+                    <a class="nav-link" href="{{ route('writer.profile') }}">
                         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <circle cx="12" cy="8" r="4"></circle>
                             <path d="M4 20a8 8 0 0 1 16 0"></path>
                         </svg>
-                        <span>My Account</span>
+                        <span>My Profile</span>
                     </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-label">Links</div>
                     <a class="nav-link" href="{{ route('writers.index') }}">
                         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
@@ -770,48 +643,6 @@
             @if(session('uploaded'))
                 <div class="flash success">{{ session('uploaded') }}</div>
             @endif
-
-            <section class="profile-section" id="writer-profile">
-                <article class="profile-card">
-                    <div class="profile-card-head">
-                        @if($profilePicture !== '')
-                            <img class="profile-avatar" src="{{ asset($profilePicture) }}" alt="{{ $profileName }}">
-                        @else
-                            <div class="profile-avatar profile-avatar-fallback">{{ $initials }}</div>
-                        @endif
-                        <div>
-                            <div class="profile-name">{{ $profileName }}</div>
-                            <div class="profile-tag">Writer Profile</div>
-                        </div>
-                    </div>
-
-                    <div class="profile-list">
-                        <div class="profile-row">
-                            <div class="profile-row-label">Name</div>
-                            <div class="profile-row-value">{{ $profileName }}</div>
-                        </div>
-                        <div class="profile-row">
-                            <div class="profile-row-label">Email</div>
-                            <div class="profile-row-value">{{ $profileEmail }}</div>
-                        </div>
-                        <div class="profile-row">
-                            <div class="profile-row-label">Writer ID</div>
-                            <div class="profile-row-value">#{{ $profileId ?: 'N/A' }}</div>
-                        </div>
-                        <div class="profile-row">
-                            <div class="profile-row-label">Writer Qualification</div>
-                            <div class="profile-row-value">{{ $profileQualification !== '' ? $profileQualification : 'Not added yet' }}</div>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="profile-copy-card">
-                    <div class="panel-kicker">Profile Section</div>
-                    <h3>Writer details at a glance</h3>
-                    <p>This section shows the writer name, email, writer ID, profile photo, and qualification pulled from the writer account.</p>
-                    <div class="panel-pill" style="width:max-content;">Profile picture is shown when uploaded during registration</div>
-                </article>
-            </section>
 
             <section class="summary-grid">
                 @foreach($menuItems as $item)
