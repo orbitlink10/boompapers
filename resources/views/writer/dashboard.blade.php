@@ -9,503 +9,718 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --blue: #1d7bff;
-            --dark: #14141a;
-            --muted: #5c5c6a;
-            --bg: #f7f8fb;
-            --card: #ffffff;
-            --border: #e6e8f0;
-            --green: #0f5951;
+            --bg: #f2f2f2;
+            --panel: #ffffff;
+            --panel-soft: #f7f7f7;
+            --line: #dfdfdf;
+            --text: #2d2d2d;
+            --muted: #727272;
+            --accent: #5f70cb;
+            --accent-soft: #eef1ff;
+            --success: #0f9d69;
             --danger: #c53030;
-            --warn: #c27a00;
+            --warning: #c27a00;
         }
+
         * { box-sizing: border-box; }
+
         body {
             margin: 0;
             font-family: 'Manrope', system-ui, -apple-system, sans-serif;
             background:
-                radial-gradient(circle at 88% 10%, rgba(29, 123, 255, 0.12), rgba(29, 123, 255, 0) 30%),
+                radial-gradient(circle at top right, rgba(95, 112, 203, 0.12), transparent 28%),
                 var(--bg);
-            color: var(--dark);
+            color: var(--text);
         }
-        .topbar {
-            background: rgba(255,255,255,0.9);
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+
+        .app-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
         }
-        .topbar-inner {
-            max-width: 1240px;
-            margin: 0 auto;
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
+
+        .sidebar {
+            padding: 26px 14px;
+            border-right: 1px solid #d8d8d8;
+            background: rgba(255, 255, 255, 0.42);
         }
+
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 20px;
-            font-weight: 800;
+            gap: 12px;
+            padding: 0 10px 18px;
+            border-bottom: 1px solid #d9d9d9;
         }
-        .mark {
-            width: 36px;
-            height: 36px;
-            border-radius: 11px;
-            background: linear-gradient(135deg, #1d7bff, #25c7ff);
+
+        .brand-mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #1d72d8, #2947b7);
+            color: #fff;
             display: grid;
             place-items: center;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+        }
+
+        .brand-copy {
+            display: grid;
+            gap: 2px;
+        }
+
+        .brand-title {
+            font-size: 27px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+        }
+
+        .nav-card {
+            margin-top: 18px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid #e5e5e5;
+            border-radius: 18px;
+            padding: 12px 10px;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-section {
+            display: grid;
+            gap: 4px;
+        }
+
+        .nav-section + .nav-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #ececec;
+        }
+
+        .nav-label {
+            padding: 0 10px 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #8a8a8a;
+            font-weight: 800;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 12px;
+            border-radius: 14px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 700;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: #fff;
+            color: #2f2f2f;
+            transform: translateX(2px);
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            color: #6b6b6b;
+            flex-shrink: 0;
+        }
+
+        .nav-link.active .nav-icon,
+        .nav-link:hover .nav-icon {
+            color: #272727;
+        }
+
+        .nav-count {
+            margin-left: auto;
+            min-width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            padding: 0 8px;
+            background: var(--accent);
             color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .content {
+            padding: 28px;
+            display: grid;
+            gap: 20px;
+        }
+
+        .hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid #e3e3e3;
+            border-radius: 22px;
+            padding: 24px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: 34px;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-weight: 600;
+            max-width: 760px;
+        }
+
+        .hero-badge {
+            border-radius: 999px;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px solid #e2e2e2;
+            font-size: 12px;
+            font-weight: 800;
+            color: #575757;
+            white-space: nowrap;
+        }
+
+        .flash {
+            border-radius: 14px;
+            padding: 12px 14px;
             font-size: 13px;
             font-weight: 800;
-        }
-        .actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .btn {
-            text-decoration: none;
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-weight: 800;
-            font-size: 14px;
             border: 1px solid transparent;
-            color: #1f2b40;
-            background: #fff;
         }
-        .btn-ghost { border-color: var(--border); }
-        .btn-primary {
-            background: linear-gradient(135deg, #1d7bff, #25c7ff);
-            color: #fff;
-            box-shadow: 0 10px 22px rgba(29,123,255,0.28);
+
+        .flash.success {
+            background: #eaf8f0;
+            border-color: #bce7cb;
+            color: #0f7b4d;
         }
-        main {
-            max-width: 1240px;
-            margin: 0 auto;
-            padding: 20px 18px 36px;
+
+        .flash.error {
+            background: #fdeaea;
+            border-color: #f5c3c3;
+            color: #b42318;
+        }
+
+        .summary-grid {
             display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 14px;
         }
-        .intro {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 16px 18px;
+
+        .summary-card {
+            background: var(--panel);
+            border: 1px solid #e5e5e5;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .summary-card .eyebrow {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.1px;
+            color: #909090;
+            font-weight: 800;
+        }
+
+        .summary-card .value {
+            margin-top: 12px;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .summary-card .copy {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .workspace-panel {
+            background: var(--panel);
+            border: 1px solid #e5e5e5;
+            border-radius: 22px;
+            box-shadow: 0 18px 34px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .panel-head {
+            padding: 22px 22px 16px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            gap: 14px;
+            gap: 18px;
+            border-bottom: 1px solid #ececec;
         }
-        .intro h1 {
-            margin: 0;
-            font-size: 28px;
-            letter-spacing: -0.3px;
+
+        .panel-kicker {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #8a8a8a;
+            font-weight: 800;
         }
-        .intro p {
+
+        .panel-head h2 {
             margin: 6px 0 0;
+            font-size: 30px;
+            letter-spacing: -0.8px;
+        }
+
+        .panel-head p {
+            margin: 8px 0 0;
             color: var(--muted);
             font-weight: 600;
         }
-        .note {
-            background: #eef5ff;
-            border: 1px solid #d5e6ff;
-            color: #2255a4;
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-weight: 700;
-            font-size: 13px;
-            white-space: normal;
-        }
-        .table-wrap {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            overflow: hidden;
-        }
-        .workspace {
+
+        .panel-meta {
             display: grid;
-            grid-template-columns: 280px minmax(0, 1fr);
-            gap: 18px;
-            align-items: start;
+            gap: 8px;
+            justify-items: end;
         }
-        .workspace-main {
-            display: grid;
-            gap: 14px;
-        }
-        .submenu-panel {
-            position: sticky;
-            top: 84px;
-            border-radius: 24px;
-            padding: 24px 18px;
-            background: linear-gradient(180deg, #0d2f69, #14488e);
-            color: #f6f8ff;
-            box-shadow: 0 22px 45px rgba(20, 72, 142, 0.24);
-        }
-        .submenu-eyebrow {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1.1px;
-            opacity: 0.75;
-            font-weight: 800;
-        }
-        .submenu-title {
-            margin: 8px 0 18px;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.3px;
-        }
-        .submenu-list {
-            display: grid;
-            gap: 10px;
-        }
-        .submenu-link {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-decoration: none;
-            color: #dfe8ff;
-            padding: 12px;
-            border-radius: 18px;
-            border: 1px solid transparent;
-            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-        }
-        .submenu-link:hover,
-        .submenu-link.active {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.12);
-            transform: translateX(2px);
-        }
-        .submenu-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            background: rgba(255, 255, 255, 0.09);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.4px;
-            flex-shrink: 0;
-        }
-        .submenu-label {
-            display: block;
-            font-size: 15px;
-            font-weight: 800;
-        }
-        .submenu-copy {
-            display: block;
-            margin-top: 3px;
-            font-size: 12px;
-            color: rgba(223, 232, 255, 0.82);
-            font-weight: 600;
-        }
-        .submenu-count {
-            margin-left: auto;
-            min-width: 34px;
-            height: 34px;
+
+        .panel-pill {
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            display: grid;
-            place-items: center;
+            padding: 9px 12px;
+            background: var(--panel-soft);
+            border: 1px solid #e7e7e7;
+            font-size: 12px;
             font-weight: 800;
-            font-size: 13px;
-            padding: 0 10px;
+            color: #666;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        thead { background: #f4f8ff; }
-        th, td {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border);
+
+        thead {
+            background: #fafafa;
+        }
+
+        th,
+        td {
+            padding: 14px 22px;
+            border-bottom: 1px solid #ededed;
             text-align: left;
-            font-size: 14px;
             vertical-align: top;
+            font-size: 14px;
         }
+
         th {
-            font-size: 13px;
+            font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: 0.35px;
-            color: #42526e;
+            letter-spacing: 0.8px;
+            color: #7d7d7d;
             font-weight: 800;
         }
-        tr:hover { background: #f9fbff; }
+
+        tbody tr:hover {
+            background: #fcfcfc;
+        }
+
         .order-id {
-            color: var(--green);
-            font-weight: 900;
-            text-decoration: none;
-        }
-        .title {
-            font-size: 24px;
             font-weight: 800;
-            line-height: 1.3;
-            color: #1f2d44;
-            letter-spacing: -0.2px;
+            color: #2f2f2f;
         }
+
+        .order-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #232323;
+            letter-spacing: -0.5px;
+        }
+
         .meta {
-            margin-top: 6px;
+            margin-top: 5px;
             color: var(--muted);
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
         }
+
         .status {
             display: inline-flex;
             align-items: center;
-            padding: 6px 9px;
-            border-radius: 9px;
+            padding: 7px 10px;
+            border-radius: 999px;
             font-size: 12px;
             font-weight: 800;
-            text-transform: capitalize;
         }
-        .status.pending { background: #fff3d9; color: #c27a00; }
-        .status.assigned { background: #e8f5ff; color: #0b6fb8; }
-        .status.available { background: #e7f8ee; color: #1f9b55; }
-        .status.inprogress { background: #e8f5ff; color: #0b6fb8; }
-        .status.completed { background: #e7f8ee; color: #1f9b55; }
-        .status.revision { background: #fff0f2; color: #d62d50; }
-        .status.editing { background: #f0f2ff; color: #3c4ad9; }
-        .status.approved { background: #eaf6ff; color: #1f6fb5; }
-        .status.cancelled { background: #fde9e9; color: #c53030; }
+
+        .status.private {
+            background: #efefef;
+            color: #767676;
+        }
+
+        .status.assigned,
+        .status.inprogress {
+            background: #edf2ff;
+            color: #5365c4;
+        }
+
+        .status.available {
+            background: #e9f8f0;
+            color: #11885a;
+        }
+
+        .status.revision {
+            background: #fff0f0;
+            color: #c03b3b;
+        }
+
+        .status.completed,
+        .status.approved {
+            background: #edf9ef;
+            color: #1d8f4d;
+        }
+
+        .status.editing {
+            background: #f4f1ff;
+            color: #7152d9;
+        }
+
         .deadline-live {
             font-weight: 800;
-            color: #1f2b40;
+            color: #2d2d2d;
             white-space: nowrap;
         }
-        .deadline-live.deadline-urgent { color: var(--warn); }
-        .deadline-live.deadline-expired { color: var(--danger); }
-        .empty {
-            text-align: center;
-            padding: 20px;
-            color: var(--muted);
-            font-weight: 800;
+
+        .deadline-live.deadline-urgent {
+            color: var(--warning);
         }
-        .flash {
-            margin: 0;
-            border-radius: 10px;
-            padding: 10px 12px;
-            font-weight: 800;
-            font-size: 13px;
+
+        .deadline-live.deadline-expired {
+            color: var(--danger);
         }
-        .flash.success {
-            background: #eafaf0;
-            border: 1px solid #bbecce;
-            color: #0f7a45;
-        }
-        .flash.error {
-            background: #fde9e9;
-            border: 1px solid #ffcaca;
-            color: #bd2130;
-        }
+
         .order-actions {
             display: grid;
-            gap: 9px;
+            gap: 10px;
+            min-width: 180px;
         }
+
         .order-actions form {
             display: grid;
             gap: 8px;
             margin: 0;
         }
+
+        .order-actions input[type="file"],
         .order-actions select {
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            padding: 8px 10px;
-            font-family: inherit;
-            font-weight: 700;
-            color: #1f2b40;
+            width: 100%;
+            border: 1px solid #dddddd;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font: inherit;
+            font-size: 13px;
+            color: #555;
             background: #fff;
         }
+
+        .btn {
+            border: 0;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: center;
+        }
+
         .btn-success {
-            background: linear-gradient(135deg, #13b66c, #0f9f5a);
+            background: #232323;
             color: #fff;
         }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
         .btn-light {
-            background: #f2f7ff;
-            border-color: #d7e7ff;
+            background: #f3f3f3;
+            color: #4e4e4e;
+            border: 1px solid #dfdfdf;
         }
-        .panel-head {
-            padding: 18px 18px 0;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-        .panel-head h2 {
-            margin: 4px 0 0;
-            font-size: 28px;
-            letter-spacing: -0.3px;
-        }
-        .panel-head p {
-            margin: 6px 0 0;
-            color: var(--muted);
-            font-weight: 600;
-        }
-        .panel-kicker {
+
+        .file-note {
             font-size: 12px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: #6781a7;
             font-weight: 800;
+            color: #5d70c8;
         }
-        @media (max-width: 1050px) {
-            .workspace {
+
+        .empty {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        @media (max-width: 1220px) {
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1080px) {
+            .app-shell {
                 grid-template-columns: 1fr;
             }
-            .submenu-panel {
-                position: static;
+
+            .sidebar {
+                border-right: 0;
+                border-bottom: 1px solid #d8d8d8;
             }
-            .intro {
+
+            .content {
+                padding: 18px;
+            }
+        }
+
+        @media (max-width: 840px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero,
+            .panel-head {
                 flex-direction: column;
-                align-items: flex-start;
             }
-            .title { font-size: 18px; }
+
+            th,
+            td {
+                padding: 12px 14px;
+            }
+
+            .order-title {
+                font-size: 17px;
+            }
         }
     </style>
 </head>
 <body>
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand"><span class="mark">WR</span><span>Writer Dashboard</span></div>
-            <div class="actions">
-                <a class="btn btn-ghost" href="{{ route('writers.index') }}">Public Writers Page</a>
-                <a class="btn btn-primary" href="{{ route('writer.logout') }}">Logout</a>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        @if(session('status'))
-            <p class="flash success">{{ session('status') }}</p>
-        @endif
-        @if(session('error'))
-            <p class="flash error">{{ session('error') }}</p>
-        @endif
-        @if(session('uploaded'))
-            <p class="flash success">{{ session('uploaded') }}</p>
-        @endif
-
-        <div class="workspace">
-            <aside class="submenu-panel">
-                <div class="submenu-eyebrow">Writer Workspace</div>
-                <div class="submenu-title">Order Menus</div>
-                <div class="submenu-list">
-                    @foreach($menuItems as $item)
-                        <a class="submenu-link {{ ($menu ?? 'available') === $item['key'] ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => $item['key']]) }}">
-                            <span class="submenu-icon">{{ $item['short'] }}</span>
-                            <span>
-                                <span class="submenu-label">{{ $item['label'] }}</span>
-                                <span class="submenu-copy">{{ $item['description'] }}</span>
-                            </span>
-                            <span class="submenu-count">{{ $item['count'] }}</span>
-                        </a>
-                    @endforeach
+    @php
+        $availableItem = collect($menuItems ?? [])->firstWhere('key', 'available') ?? [];
+        $assignedItem = collect($menuItems ?? [])->firstWhere('key', 'assigned') ?? [];
+        $revisionItem = collect($menuItems ?? [])->firstWhere('key', 'revision') ?? [];
+        $completedItem = collect($menuItems ?? [])->firstWhere('key', 'completed') ?? [];
+        $availableCount = $availableItem['count'] ?? 0;
+        $assignedCount = $assignedItem['count'] ?? 0;
+        $revisionCount = $revisionItem['count'] ?? 0;
+        $completedCount = $completedItem['count'] ?? 0;
+    @endphp
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">BP</div>
+                <div class="brand-copy">
+                    <div class="brand-title">boompapers</div>
+                    <div class="brand-subtitle">Writer Workspace</div>
                 </div>
-            </aside>
-
-            <div class="workspace-main">
-                <section class="intro">
-                    <div>
-                        <h1>{{ session('writer_name', 'Writer') }}</h1>
-                        <p>Orders move between Available, Assigned, Revision, and Completed as you work.</p>
-                    </div>
-                    <div class="note">Writer deadline = Client deadline minus 4 hours</div>
-                </section>
-
-                <section class="table-wrap">
-                    <div class="panel-head">
-                        <div>
-                            <div class="panel-kicker">Current Queue</div>
-                            <h2>{{ $activeMenu['label'] ?? 'Available' }}</h2>
-                            <p>{{ $activeMenu['description'] ?? 'Open orders ready to take.' }}</p>
-                        </div>
-                        @if(($menu ?? 'available') === 'available')
-                            <div class="note">Take an order to move it into Assigned and notify the client immediately.</div>
-                        @endif
-                    </div>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Order</th>
-                                <th>Client</th>
-                                <th>Type</th>
-                                <th>Pages</th>
-                                <th>Deadline</th>
-                                <th>Status</th>
-                                <th>Assigned</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($orders as $order)
-                                <tr>
-                                    <td><span class="order-id">#{{ $order['id'] }}</span></td>
-                                    <td>
-                                        <div class="title">{{ $order['title'] }}</div>
-                                        <div class="meta">{{ $order['subject'] }}</div>
-                                    </td>
-                                    <td>
-                                        <div>{{ $order['client_name'] }}</div>
-                                        <div class="meta">{{ $order['client_email'] }}</div>
-                                    </td>
-                                    <td>{{ $order['type'] }}</td>
-                                    <td>{{ $order['pages'] }}</td>
-                                    <td>
-                                        <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
-                                            {{ $order['writer_deadline'] }}
-                                        </span>
-                                    </td>
-                                    <td><span class="status {{ $order['status'] }}">{{ $order['status_label'] }}</span></td>
-                                    <td>{{ $order['assigned_writer'] }}</td>
-                                    <td>
-                                        <div class="order-actions">
-                                            @if($order['can_take'])
-                                                <form action="{{ route('writer.order.claim', ['id' => $order['id']]) }}" method="POST">
-                                                    @csrf
-                                                    <button class="btn btn-success" type="submit">Take Order</button>
-                                                </form>
-                                            @elseif($order['is_assigned_to_current'])
-                                                <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
-                                                    @csrf
-                                                    <select name="status" aria-label="Update order status">
-                                                        @foreach($order['status_options'] as $key => $value)
-                                                            <option value="{{ $key }}" {{ ($order['status'] === $key) ? 'selected' : '' }}>{{ $value }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    <button class="btn" type="submit">Update Status</button>
-                                                </form>
-                                                <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
-                                                    @csrf
-                                                    <input type="file" name="files[]" multiple>
-                                                    <button class="btn btn-light" type="submit">Upload Files</button>
-                                                </form>
-                                                @if(($order['files_count'] ?? 0) > 0)
-                                                    <span style="font-size:12px; font-weight:800; color:#1f6fb5">{{ $order['files_count'] }} file(s)</span>
-                                                @endif
-                                            @else
-                                                <span style="color: var(--muted); font-weight: 800; font-size: 13px;">Not available</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="9" class="empty">No orders in this menu right now.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </section>
             </div>
-        </div>
-    </main>
+
+            <div class="nav-card">
+                <div class="nav-section">
+                    <div class="nav-label">Workspace</div>
+                    <a class="nav-link {{ ($menu ?? 'available') === 'available' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'available']) }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 11.5 12 4l9 7.5"></path>
+                            <path d="M5 10.5V20h14v-9.5"></path>
+                        </svg>
+                        <span>Available</span>
+                        <span class="nav-count">{{ $availableCount }}</span>
+                    </a>
+                    <a class="nav-link {{ ($menu ?? '') === 'assigned' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'assigned']) }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                            <path d="M8 12h8"></path>
+                            <path d="M8 8h8"></path>
+                            <path d="M8 16h5"></path>
+                        </svg>
+                        <span>Assigned</span>
+                        <span class="nav-count">{{ $assignedCount }}</span>
+                    </a>
+                    <a class="nav-link {{ ($menu ?? '') === 'revision' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'revision']) }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"></path>
+                            <path d="M8 16H3v5"></path>
+                        </svg>
+                        <span>Revision</span>
+                        <span class="nav-count">{{ $revisionCount }}</span>
+                    </a>
+                    <a class="nav-link {{ ($menu ?? '') === 'completed' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'completed']) }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m5 12 4.2 4.2L19 6.5"></path>
+                        </svg>
+                        <span>Completed</span>
+                        <span class="nav-count">{{ $completedCount }}</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-label">Links</div>
+                    <a class="nav-link" href="{{ route('writers.index') }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9.5" cy="7" r="4"></circle>
+                            <path d="M20 8v6"></path>
+                            <path d="M23 11h-6"></path>
+                        </svg>
+                        <span>Public Writers</span>
+                    </a>
+                    <a class="nav-link" href="{{ route('writer.logout') }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <path d="M16 17l5-5-5-5"></path>
+                            <path d="M21 12H9"></path>
+                        </svg>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content">
+            <section class="hero">
+                <div>
+                    <h1>{{ session('writer_name', 'Writer') }}</h1>
+                    <p>Manage your queue from one place. Available orders can be taken, assigned work stays private to you, and revision or completed orders stay grouped in their own sections.</p>
+                </div>
+                <div class="hero-badge">{{ $activeMenu['label'] ?? 'Available' }} Queue</div>
+            </section>
+
+            @if(session('status'))
+                <div class="flash success">{{ session('status') }}</div>
+            @endif
+            @if(session('error'))
+                <div class="flash error">{{ session('error') }}</div>
+            @endif
+            @if(session('uploaded'))
+                <div class="flash success">{{ session('uploaded') }}</div>
+            @endif
+
+            <section class="summary-grid">
+                @foreach($menuItems as $item)
+                    <article class="summary-card">
+                        <div class="eyebrow">{{ $item['label'] }}</div>
+                        <div class="value">{{ $item['count'] }}</div>
+                        <div class="copy">{{ $item['description'] }}</div>
+                    </article>
+                @endforeach
+            </section>
+
+            <section class="workspace-panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-kicker">Current Queue</div>
+                        <h2>{{ $activeMenu['label'] ?? 'Available' }}</h2>
+                        <p>{{ $activeMenu['description'] ?? 'Open orders ready to take.' }}</p>
+                    </div>
+                    <div class="panel-meta">
+                        <div class="panel-pill">{{ count($orders ?? []) }} order(s)</div>
+                        <div class="panel-pill">Price hidden for writer accounts</div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Order</th>
+                            <th>Client</th>
+                            <th>Type</th>
+                            <th>Pages</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                            <th>Assigned</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($orders as $order)
+                            <tr>
+                                <td><span class="order-id">#{{ $order['id'] }}</span></td>
+                                <td>
+                                    <div class="order-title">{{ $order['title'] }}</div>
+                                    <div class="meta">{{ $order['subject'] }}</div>
+                                </td>
+                                <td>
+                                    <div>{{ $order['client_name'] }}</div>
+                                    <div class="meta">{{ $order['client_email'] }}</div>
+                                </td>
+                                <td>{{ $order['type'] }}</td>
+                                <td>{{ $order['pages'] }}</td>
+                                <td>
+                                    <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
+                                        {{ $order['writer_deadline'] }}
+                                    </span>
+                                </td>
+                                <td><span class="status {{ $order['status'] }}">{{ $order['status_label'] }}</span></td>
+                                <td>{{ $order['assigned_writer'] }}</td>
+                                <td>
+                                    <div class="order-actions">
+                                        @if($order['can_take'])
+                                            <form action="{{ route('writer.order.claim', ['id' => $order['id']]) }}" method="POST">
+                                                @csrf
+                                                <button class="btn btn-success" type="submit">Take Order</button>
+                                            </form>
+                                        @elseif($order['is_assigned_to_current'])
+                                            <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
+                                                @csrf
+                                                <select name="status" aria-label="Update order status">
+                                                    @foreach($order['status_options'] as $key => $value)
+                                                        <option value="{{ $key }}" {{ ($order['status'] === $key) ? 'selected' : '' }}>{{ $value }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <button class="btn btn-primary" type="submit">Update Status</button>
+                                            </form>
+                                            <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
+                                                @csrf
+                                                <input type="file" name="files[]" multiple>
+                                                <button class="btn btn-light" type="submit">Upload Files</button>
+                                            </form>
+                                            @if(($order['files_count'] ?? 0) > 0)
+                                                <div class="file-note">{{ $order['files_count'] }} file(s)</div>
+                                            @endif
+                                        @else
+                                            <div class="meta">Not available</div>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="empty">No orders in this queue right now.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
 
     <script>
         const deadlineCells = document.querySelectorAll('.deadline-live');
@@ -549,6 +764,7 @@
 
                 cell.textContent = formatRemaining(diffMs);
                 cell.classList.remove('deadline-expired');
+
                 if (diffMs <= 60 * 60 * 1000) {
                     cell.classList.add('deadline-urgent');
                 } else {

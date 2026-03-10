@@ -672,6 +672,8 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             $isAssignedToCurrent = $writerId > 0 && $orderWriterId === $writerId
                 || ($writerName !== '' && $orderWriterName !== '' && strcasecmp($orderWriterName, $writerName) === 0)
                 || ($writerEmail !== '' && $orderWriterEmail !== '' && strcasecmp($orderWriterEmail, $writerEmail) === 0);
+            $isTakeable = $isAvailable($order);
+            $canViewOrderStatus = $isAssignedToCurrent || $isTakeable;
 
             $files = collect(session('order_files', []))
                 ->where('order_id', (int) ($order['id'] ?? 0))
@@ -684,17 +686,21 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
                 'subject' => $order['subject'] ?? 'Other',
                 'type' => $order['type'] ?? 'Essay',
                 'pages' => (int) ($order['pages'] ?? 1),
-                'status' => $status,
+                'status' => $canViewOrderStatus ? $status : 'private',
                 'client_name' => $order['customer_name'] ?? 'Client',
                 'client_email' => $order['customer_email'] ?? 'client@example.com',
-                'assigned_writer' => $orderWriterName !== '' ? $orderWriterName : 'Unassigned',
+                'assigned_writer' => $isAssignedToCurrent
+                    ? ($orderWriterName !== '' ? $orderWriterName : 'Unassigned')
+                    : ($isTakeable ? 'Unassigned' : 'Private'),
                 'writer_due_at' => $writerDueAt,
                 'writer_deadline' => remainingDeadlineLabelFor($writerDueAt, $fallbackDeadline),
                 'writer_deadline_fallback' => $fallbackDeadline,
                 'is_assigned_to_current' => $isAssignedToCurrent,
-                'can_take' => $isAvailable($order),
+                'can_take' => $isTakeable,
                 'status_options' => $statusOptions,
-                'status_label' => $status === 'inprogress' ? 'In Progress' : ucfirst($status),
+                'status_label' => !$canViewOrderStatus
+                    ? 'Private'
+                    : ($status === 'inprogress' ? 'In Progress' : ucfirst($status)),
                 'files_count' => count($files),
             ];
         })
