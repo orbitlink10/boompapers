@@ -217,14 +217,14 @@
             <div class="nav-title">Main</div>
             <a class="nav-link active" href="{{ route('admin.dashboard') }}"><span>Dashboard</span></a>
             <a class="nav-link" href="{{ route('order.create') }}"><span>Add Order</span></a>
-            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Orders</span><span class="nav-count">20</span></a>
-            <a class="nav-link" href="{{ route('admin.courses') }}"><span>Courses</span><span class="nav-count">6</span></a>
+            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Orders</span><span class="nav-count">{{ $navCounts['orders'] ?? 0 }}</span></a>
+            <a class="nav-link" href="{{ route('admin.courses') }}"><span>Courses</span><span class="nav-count">{{ $navCounts['courses'] ?? 0 }}</span></a>
         </div>
 
         <div class="nav-group">
             <div class="nav-title">Manage Users</div>
-            <a class="nav-link" href="{{ route('admin.clients') }}"><span>Clients</span><span class="nav-count">9</span></a>
-            <a class="nav-link" href="{{ route('admin.writers') }}"><span>Writers</span><span class="nav-count">3</span></a>
+            <a class="nav-link" href="{{ route('admin.clients') }}"><span>Clients</span><span class="nav-count">{{ $navCounts['clients'] ?? 0 }}</span></a>
+            <a class="nav-link" href="{{ route('admin.writers') }}"><span>Writers</span><span class="nav-count">{{ $navCounts['writers'] ?? 0 }}</span></a>
             <a class="nav-link" href="{{ route('admin.orders') }}"><span>Financial</span></a>
         </div>
 
@@ -238,7 +238,7 @@
 
     <main class="content">
         @php
-            $orders = $orders ?? session('orders', []);
+            $orders = $orders ?? [];
             $count = function($status) use ($orders) { return collect($orders)->where('status', $status)->count(); };
         @endphp
         <div class="topbar">

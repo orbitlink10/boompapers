@@ -9,7 +9,21 @@ if (!function_exists('loadOrders')) {
         if (file_exists($file)) {
             $json = file_get_contents($file);
             $data = json_decode($json, true);
-            return is_array($data) ? $data : [];
+            if (!is_array($data)) {
+                return [];
+            }
+
+            // Keep only orders that belong to a client account.
+            return collect($data)
+                ->filter(function ($order) {
+                    if (!is_array($order)) {
+                        return false;
+                    }
+
+                    return trim((string) ($order['customer_email'] ?? '')) !== '';
+                })
+                ->values()
+                ->all();
         }
         return [];
     }
@@ -282,10 +296,6 @@ Route::get('/customer/dashboard', function () {
         return redirect()->route('order', ['tab' => 'existing']);
     }
     $orders = loadOrders();
-    if (empty($orders) && session()->has('orders')) {
-        $orders = session('orders');
-        saveOrders($orders);
-    }
     $customerOrders = ordersForCustomer($orders, session('customer_email'));
 
     return view('customer.dashboard', ['orders' => $customerOrders]);
@@ -352,9 +362,6 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
     ];
     saveOrders($orders);
     storeOrderFiles($request->file('files', []), $id);
-
-    // Keep any session copy scoped to the logged-in customer.
-    session(['orders' => ordersForCustomer($orders, session('customer_email'))]);
 
     return redirect()->route('customer.dashboard');
 })->name('order.submit');
@@ -433,11 +440,36 @@ Route::get('/admin', function () {
         return redirect()->route('admin.login');
     }
     $orders = loadOrders();
-    if (empty($orders) && session()->has('orders')) {
-        $orders = session('orders');
-        saveOrders($orders);
-    }
-    return view('admin.dashboard', ['orders' => $orders]);
+
+    $ordersCollection = collect($orders);
+    $distinctSubjects = $ordersCollection
+        ->map(fn ($order) => trim((string) ($order['subject'] ?? '')))
+        ->filter()
+        ->map(fn ($subject) => strtolower($subject))
+        ->unique()
+        ->count();
+    $distinctClients = $ordersCollection
+        ->map(fn ($order) => trim((string) ($order['customer_email'] ?? '')))
+        ->filter()
+        ->map(fn ($email) => strtolower($email))
+        ->unique()
+        ->count();
+    $distinctWriters = $ordersCollection
+        ->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
+        ->filter()
+        ->map(fn ($writer) => strtolower($writer))
+        ->unique()
+        ->count();
+
+    return view('admin.dashboard', [
+        'orders' => $orders,
+        'navCounts' => [
+            'orders' => $ordersCollection->count(),
+            'courses' => $distinctSubjects,
+            'clients' => $distinctClients,
+            'writers' => $distinctWriters,
+        ],
+    ]);
 })->name('admin.dashboard');
 
 Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
@@ -445,21 +477,24 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
         return redirect()->route('admin.login');
     }
     $status = $request->query('status');
-    $orders = loadOrders();
-    if (empty($orders) && session()->has('orders')) {
-        $orders = session('orders');
-        saveOrders($orders);
-    }
-    $orders = collect($orders);
+    $orders = collect(loadOrders());
+    $allOrders = $orders;
     if ($status) {
         $orders = $orders->where('status', $status);
     }
     $orders = $orders->values()->all();
-    $writers = [
-        ['id' => 1, 'name' => 'Alice Writer'],
-        ['id' => 2, 'name' => 'Brian Smith'],
-        ['id' => 3, 'name' => 'Carol Johnson'],
-    ];
+    $writers = $allOrders
+        ->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
+        ->filter()
+        ->groupBy(fn ($name) => strtolower($name))
+        ->values()
+        ->map(function ($rows, $index) {
+            return [
+                'id' => $index + 1,
+                'name' => $rows->first(),
+            ];
+        })
+        ->all();
     return view('admin.orders', [
         'orders' => $orders,
         'status' => $status,
@@ -486,7 +521,6 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
         }
     }
     saveOrders($orders);
-    session(['orders' => $orders]); // keep session copy in sync
     return back()->with('assigned', 'Order assigned successfully.');
 })->name('admin.orders.assign');
 
@@ -508,14 +542,32 @@ Route::get('/admin/courses', function () {
         return redirect()->route('admin.login');
     }
 
-    $courses = [
-        ['id' => 1, 'name' => 'Business', 'active_writers' => 3],
-        ['id' => 2, 'name' => 'Nursing', 'active_writers' => 2],
-        ['id' => 3, 'name' => 'Technology', 'active_writers' => 4],
-        ['id' => 4, 'name' => 'Literature', 'active_writers' => 2],
-        ['id' => 5, 'name' => 'Economics', 'active_writers' => 3],
-        ['id' => 6, 'name' => 'History', 'active_writers' => 2],
-    ];
+    $orders = collect(loadOrders());
+    $courses = $orders
+        ->map(function ($order) {
+            return [
+                'subject' => trim((string) ($order['subject'] ?? '')),
+                'writer' => trim((string) ($order['writer_name'] ?? '')),
+            ];
+        })
+        ->filter(fn ($row) => $row['subject'] !== '')
+        ->groupBy(fn ($row) => strtolower($row['subject']))
+        ->values()
+        ->map(function ($rows, $index) {
+            $subject = $rows->first()['subject'];
+            $activeWriters = collect($rows)
+                ->map(fn ($row) => strtolower($row['writer']))
+                ->filter()
+                ->unique()
+                ->count();
+
+            return [
+                'id' => $index + 1,
+                'name' => $subject,
+                'active_writers' => $activeWriters,
+            ];
+        })
+        ->all();
 
     return view('admin.courses', ['courses' => $courses]);
 })->name('admin.courses');
@@ -527,7 +579,8 @@ Route::get('/admin/clients', function () {
 
     $orders = loadOrders();
     $clients = collect($orders)
-        ->groupBy(fn ($order) => $order['customer_email'] ?? 'customer@example.com')
+        ->groupBy(fn ($order) => trim((string) ($order['customer_email'] ?? '')))
+        ->filter(fn ($rows, $email) => $email !== '')
         ->map(function ($rows, $email) {
             $first = $rows->first();
             return [
@@ -548,22 +601,24 @@ Route::get('/admin/writers', function () {
         return redirect()->route('admin.login');
     }
 
-    $defaults = collect([
-        ['id' => 1, 'name' => 'Alice Writer'],
-        ['id' => 2, 'name' => 'Brian Smith'],
-        ['id' => 3, 'name' => 'Carol Johnson'],
-    ]);
-
     $orders = loadOrders();
-    $writers = $defaults->map(function ($writer) use ($orders) {
-        $assigned = collect($orders)->where('writer_name', $writer['name']);
+    $writers = collect($orders)
+        ->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
+        ->filter()
+        ->groupBy(fn ($name) => strtolower($name))
+        ->values()
+        ->map(function ($rows, $index) use ($orders) {
+        $writerName = $rows->first();
+        $assigned = collect($orders)->filter(
+            fn ($order) => strcasecmp(trim((string) ($order['writer_name'] ?? '')), $writerName) === 0
+        );
         return [
-            'id' => $writer['id'],
-            'name' => $writer['name'],
+            'id' => $index + 1,
+            'name' => $writerName,
             'orders' => $assigned->count(),
             'status' => $assigned->isEmpty() ? 'Available' : 'Active',
         ];
-    })->values()->all();
+    })->all();
 
     return view('admin.writers', ['writers' => $writers]);
 })->name('admin.writers');
