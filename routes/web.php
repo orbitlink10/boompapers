@@ -69,6 +69,30 @@ if (!function_exists('saveWriters')) {
     }
 }
 
+if (!function_exists('storeWriterProfilePicture')) {
+    function storeWriterProfilePicture($file, int $writerId): ?string
+    {
+        if (!$file) {
+            return null;
+        }
+
+        $dir = public_path('uploads/writers');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        if ($extension === '') {
+            $extension = 'jpg';
+        }
+
+        $name = 'writer_' . $writerId . '_' . uniqid('', true) . '.' . $extension;
+        $file->move($dir, $name);
+
+        return 'uploads/writers/' . $name;
+    }
+}
+
 if (!function_exists('findWriterByEmail')) {
     function findWriterByEmail(array $writers, ?string $email): ?array
     {
@@ -484,6 +508,8 @@ Route::post('/writer/register', function (\Illuminate\Http\Request $request) {
         'name' => 'required|string|max:255',
         'email' => 'required|email',
         'password' => 'required|string|min:6',
+        'qualification' => 'nullable|string|max:255',
+        'profile_picture' => 'nullable|image|max:5120',
         'tab' => 'nullable|string',
     ]);
 
@@ -495,11 +521,14 @@ Route::post('/writer/register', function (\Illuminate\Http\Request $request) {
     }
 
     $id = (collect($writers)->max('id') ?? 0) + 1;
+    $profilePicture = storeWriterProfilePicture($request->file('profile_picture'), $id);
     $writers[] = [
         'id' => $id,
         'name' => $data['name'],
         'email' => strtolower(trim($data['email'])),
         'password' => password_hash($data['password'], PASSWORD_DEFAULT),
+        'qualification' => trim((string) ($data['qualification'] ?? '')),
+        'profile_picture' => $profilePicture,
         'created_at' => now()->toIso8601String(),
     ];
     saveWriters($writers);
@@ -509,6 +538,8 @@ Route::post('/writer/register', function (\Illuminate\Http\Request $request) {
         'writer_id' => $id,
         'writer_name' => $data['name'],
         'writer_email' => strtolower(trim($data['email'])),
+        'writer_qualification' => trim((string) ($data['qualification'] ?? '')),
+        'writer_profile_picture' => $profilePicture,
     ]);
 
     return redirect()->route('writer.dashboard');
@@ -535,13 +566,22 @@ Route::post('/writer/login', function (\Illuminate\Http\Request $request) {
         'writer_id' => $writer['id'] ?? null,
         'writer_name' => $writer['name'] ?? 'Writer',
         'writer_email' => $writer['email'] ?? strtolower(trim($data['email'])),
+        'writer_qualification' => trim((string) ($writer['qualification'] ?? '')),
+        'writer_profile_picture' => $writer['profile_picture'] ?? null,
     ]);
 
     return redirect()->route('writer.dashboard');
 })->name('writer.login');
 
 Route::get('/writer/logout', function () {
-    session()->forget(['writer_logged_in', 'writer_id', 'writer_name', 'writer_email']);
+    session()->forget([
+        'writer_logged_in',
+        'writer_id',
+        'writer_name',
+        'writer_email',
+        'writer_qualification',
+        'writer_profile_picture',
+    ]);
     return redirect()->route('writer.auth', ['tab' => 'existing']);
 })->name('writer.logout');
 
@@ -646,6 +686,18 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
     ];
 
     $activeMenu = collect($menuItems)->firstWhere('key', $menu) ?? $menuItems[0];
+    $writerRecord = findWriterByEmail(loadWriters(), $writerEmail);
+    if (!$writerRecord && $writerId > 0) {
+        $writerRecord = collect(loadWriters())->firstWhere('id', $writerId);
+    }
+
+    $writerProfile = [
+        'id' => $writerRecord['id'] ?? $writerId,
+        'name' => trim((string) ($writerRecord['name'] ?? $writerName)) ?: 'Writer',
+        'email' => trim((string) ($writerRecord['email'] ?? $writerEmail)) ?: 'writer@example.com',
+        'qualification' => trim((string) ($writerRecord['qualification'] ?? session('writer_qualification', ''))),
+        'profile_picture' => $writerRecord['profile_picture'] ?? session('writer_profile_picture'),
+    ];
 
     $orders = $ordersCollection
         ->filter(function ($order) use ($menu, $matchesMenu) {
@@ -712,6 +764,7 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
         'menu' => $menu,
         'menuItems' => $menuItems,
         'activeMenu' => $activeMenu,
+        'writerProfile' => $writerProfile,
     ]);
 })->name('writer.dashboard');
 

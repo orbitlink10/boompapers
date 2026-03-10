@@ -101,6 +101,10 @@
             font-weight: 700;
             outline: none;
         }
+        input[type="file"] {
+            padding: 10px 13px;
+            background: #fff;
+        }
         input:focus {
             border-color: var(--blue);
             box-shadow: 0 0 0 3px rgba(29,123,255,0.15);
@@ -144,7 +148,7 @@
         </div>
 
         <div class="pane" id="pane-new">
-            <form action="{{ route('writer.register') }}" method="POST" style="display:grid; gap:14px;">
+            <form action="{{ route('writer.register') }}" method="POST" enctype="multipart/form-data" style="display:grid; gap:14px;">
                 @csrf
                 <input type="hidden" name="tab" value="new">
                 <div>
@@ -158,6 +162,14 @@
                 <div>
                     <label>Password</label>
                     <input type="password" name="password" placeholder="Minimum 6 characters" required>
+                </div>
+                <div>
+                    <label>Writer Qualification</label>
+                    <input type="text" name="qualification" value="{{ old('qualification') }}" placeholder="MBA, BSN, PhD, CPA">
+                </div>
+                <div>
+                    <label>Profile Picture</label>
+                    <input type="file" name="profile_picture" accept="image/*">
                 </div>
                 <button class="btn" type="submit">Create Account</button>
             </form>
