@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 if (!function_exists('loadOrders')) {
     function loadOrders(): array
@@ -463,6 +464,103 @@ if (!function_exists('savePricing')) {
     }
 }
 
+if (!function_exists('defaultHomepageContent')) {
+    function defaultHomepageContent(): array
+    {
+        return [
+            'hero' => [
+                'eyebrow' => 'Trusted by 25k+ students',
+                'cta_pill' => 'Fast delivery · Free revisions',
+                'title_prefix' => 'Professional',
+                'title_highlight' => 'Paper Writing',
+                'title_suffix' => 'Service that guarantees results',
+                'description' => 'Hire a dedicated academic writer with subject expertise, 24/7 communication, and industry-leading turnaround times. Every paper is 100% original and tailored to your rubric.',
+            ],
+            'badges' => [
+                ['value' => '4.4★', 'label' => 'Trustpilot', 'color' => '#00b67a'],
+                ['value' => '4.2★', 'label' => 'Sitejabber', 'color' => '#ff3366'],
+                ['value' => '4.9★', 'label' => 'Reviews.io', 'color' => '#000000'],
+            ],
+            'cards' => [
+                ['title' => 'Business Plan', 'detail' => 'Growth · Strategy · Pitch'],
+                ['title' => 'Problem Solving', 'detail' => 'Data · Finance · Math'],
+                ['title' => 'Research Paper', 'detail' => 'Peer-reviewed · Structured'],
+                ['title' => 'Essay', 'detail' => 'Creative · Argumentative'],
+            ],
+            'seo_html' => '<h2>Academic writing support that keeps standards high</h2><p>BoomPapers helps students move faster with structured research, clean formatting, and deadline-focused delivery. From essays and reports to discussion posts and research papers, each order is matched to a qualified writer and tracked inside one workspace.</p><p>Clients can place orders, upload files, review progress, and download completed work from one dashboard. Writers manage queues, deadlines, revisions, and uploaded files while admins keep pricing, homepage content, and custom pages under control from the panel.</p>',
+        ];
+    }
+}
+
+if (!function_exists('loadHomepageContent')) {
+    function loadHomepageContent(): array
+    {
+        $defaults = defaultHomepageContent();
+        $file = storage_path('app/homepage.json');
+        if (!file_exists($file)) {
+            return $defaults;
+        }
+
+        $json = file_get_contents($file);
+        $decoded = json_decode($json, true);
+        if (!is_array($decoded)) {
+            return $defaults;
+        }
+
+        return array_replace_recursive($defaults, $decoded);
+    }
+}
+
+if (!function_exists('saveHomepageContent')) {
+    function saveHomepageContent(array $content): void
+    {
+        $file = storage_path('app/homepage.json');
+        if (!is_dir(dirname($file))) {
+            mkdir(dirname($file), 0777, true);
+        }
+
+        file_put_contents($file, json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+}
+
+if (!function_exists('loadCustomPages')) {
+    function loadCustomPages(): array
+    {
+        $file = storage_path('app/pages.json');
+        if (!file_exists($file)) {
+            return [];
+        }
+
+        $json = file_get_contents($file);
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? array_values($decoded) : [];
+    }
+}
+
+if (!function_exists('saveCustomPages')) {
+    function saveCustomPages(array $pages): void
+    {
+        $file = storage_path('app/pages.json');
+        if (!is_dir(dirname($file))) {
+            mkdir(dirname($file), 0777, true);
+        }
+
+        file_put_contents($file, json_encode(array_values($pages), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+}
+
+if (!function_exists('publishedCustomPages')) {
+    function publishedCustomPages(): array
+    {
+        return collect(loadCustomPages())
+            ->filter(fn ($page) => is_array($page) && strtolower(trim((string) ($page['status'] ?? 'draft'))) === 'published')
+            ->sortBy(fn ($page) => strtolower(trim((string) ($page['title'] ?? ''))))
+            ->values()
+            ->all();
+    }
+}
+
 if (!function_exists('pricePerPageFor')) {
     function pricePerPageFor(?string $level, ?string $deadline): float
     {
@@ -504,7 +602,10 @@ if (!function_exists('categoryMultiplierFor')) {
 }
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome', [
+        'homepageContent' => loadHomepageContent(),
+        'navPages' => array_slice(publishedCustomPages(), 0, 2),
+    ]);
 });
 
 Route::get('/writers', function () {
@@ -1121,6 +1222,7 @@ Route::get('/customer/dashboard', function (\Illuminate\Http\Request $request) {
         'statusCards' => $statusCards,
         'statusFilter' => $statusFilter,
         'selectedStatusLabel' => $selectedStatusLabel,
+        'orderCount' => $customerOrders->count(),
     ]);
 })->name('customer.dashboard');
 
@@ -1671,3 +1773,234 @@ Route::post('/admin/settings', function (\Illuminate\Http\Request $request) {
 
     return back()->with('settings_saved', 'Pricing settings updated successfully.');
 })->name('admin.settings.update');
+
+Route::get('/admin/homepage', function () {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    return view('admin.homepage', [
+        'homepageContent' => loadHomepageContent(),
+    ]);
+})->name('admin.homepage');
+
+Route::post('/admin/homepage', function (\Illuminate\Http\Request $request) {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $data = $request->validate([
+        'hero_eyebrow' => 'required|string|max:255',
+        'hero_cta_pill' => 'required|string|max:255',
+        'hero_title_prefix' => 'required|string|max:255',
+        'hero_title_highlight' => 'required|string|max:255',
+        'hero_title_suffix' => 'required|string|max:255',
+        'hero_description' => 'required|string',
+        'badge_value_1' => 'required|string|max:60',
+        'badge_label_1' => 'required|string|max:120',
+        'badge_color_1' => 'required|string|max:20',
+        'badge_value_2' => 'required|string|max:60',
+        'badge_label_2' => 'required|string|max:120',
+        'badge_color_2' => 'required|string|max:20',
+        'badge_value_3' => 'required|string|max:60',
+        'badge_label_3' => 'required|string|max:120',
+        'badge_color_3' => 'required|string|max:20',
+        'card_title_1' => 'required|string|max:255',
+        'card_detail_1' => 'required|string|max:255',
+        'card_title_2' => 'required|string|max:255',
+        'card_detail_2' => 'required|string|max:255',
+        'card_title_3' => 'required|string|max:255',
+        'card_detail_3' => 'required|string|max:255',
+        'card_title_4' => 'required|string|max:255',
+        'card_detail_4' => 'required|string|max:255',
+        'seo_html' => 'nullable|string',
+    ]);
+
+    $content = [
+        'hero' => [
+            'eyebrow' => trim((string) $data['hero_eyebrow']),
+            'cta_pill' => trim((string) $data['hero_cta_pill']),
+            'title_prefix' => trim((string) $data['hero_title_prefix']),
+            'title_highlight' => trim((string) $data['hero_title_highlight']),
+            'title_suffix' => trim((string) $data['hero_title_suffix']),
+            'description' => trim((string) $data['hero_description']),
+        ],
+        'badges' => [
+            [
+                'value' => trim((string) $data['badge_value_1']),
+                'label' => trim((string) $data['badge_label_1']),
+                'color' => trim((string) $data['badge_color_1']),
+            ],
+            [
+                'value' => trim((string) $data['badge_value_2']),
+                'label' => trim((string) $data['badge_label_2']),
+                'color' => trim((string) $data['badge_color_2']),
+            ],
+            [
+                'value' => trim((string) $data['badge_value_3']),
+                'label' => trim((string) $data['badge_label_3']),
+                'color' => trim((string) $data['badge_color_3']),
+            ],
+        ],
+        'cards' => [
+            [
+                'title' => trim((string) $data['card_title_1']),
+                'detail' => trim((string) $data['card_detail_1']),
+            ],
+            [
+                'title' => trim((string) $data['card_title_2']),
+                'detail' => trim((string) $data['card_detail_2']),
+            ],
+            [
+                'title' => trim((string) $data['card_title_3']),
+                'detail' => trim((string) $data['card_detail_3']),
+            ],
+            [
+                'title' => trim((string) $data['card_title_4']),
+                'detail' => trim((string) $data['card_detail_4']),
+            ],
+        ],
+        'seo_html' => trim((string) ($data['seo_html'] ?? '')),
+    ];
+
+    saveHomepageContent($content);
+
+    return back()->with('homepage_saved', 'Homepage content updated successfully.');
+})->name('admin.homepage.update');
+
+Route::get('/admin/pages', function (\Illuminate\Http\Request $request) {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $pages = collect(loadCustomPages())
+        ->sortByDesc(fn ($page) => (int) ($page['id'] ?? 0))
+        ->values()
+        ->all();
+    $editId = (int) $request->query('edit', 0);
+    $editingPage = collect($pages)->firstWhere('id', $editId);
+
+    return view('admin.pages', [
+        'pages' => $pages,
+        'editingPage' => is_array($editingPage) ? $editingPage : null,
+    ]);
+})->name('admin.pages');
+
+Route::post('/admin/pages', function (\Illuminate\Http\Request $request) {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $data = $request->validate([
+        'id' => 'nullable|integer',
+        'title' => 'required|string|max:255',
+        'slug' => 'nullable|string|max:255',
+        'summary' => 'nullable|string|max:500',
+        'content' => 'nullable|string',
+        'status' => 'required|string|in:draft,published',
+    ]);
+
+    $pages = loadCustomPages();
+    $targetId = (int) ($data['id'] ?? 0);
+    $title = trim((string) $data['title']);
+    $slug = Str::slug(trim((string) ($data['slug'] ?? '')));
+    if ($slug === '') {
+        $slug = Str::slug($title);
+    }
+
+    if ($slug === '') {
+        return back()->withErrors(['slug' => 'Please provide a valid page title or slug.'])->withInput();
+    }
+
+    $slugExists = collect($pages)->contains(function ($page) use ($slug, $targetId) {
+        if (!is_array($page)) {
+            return false;
+        }
+
+        return strtolower(trim((string) ($page['slug'] ?? ''))) === strtolower($slug)
+            && (int) ($page['id'] ?? 0) !== $targetId;
+    });
+
+    if ($slugExists) {
+        return back()->withErrors(['slug' => 'That page slug already exists.'])->withInput();
+    }
+
+    $updated = false;
+    foreach ($pages as &$page) {
+        if (!is_array($page) || (int) ($page['id'] ?? 0) !== $targetId) {
+            continue;
+        }
+
+        $page['title'] = $title;
+        $page['slug'] = $slug;
+        $page['summary'] = trim((string) ($data['summary'] ?? ''));
+        $page['content'] = trim((string) ($data['content'] ?? ''));
+        $page['status'] = trim((string) $data['status']);
+        $page['updated_at'] = now()->toIso8601String();
+        $updated = true;
+        break;
+    }
+    unset($page);
+
+    if (!$updated) {
+        $newId = (collect($pages)->max('id') ?? 0) + 1;
+        $pages[] = [
+            'id' => $newId,
+            'title' => $title,
+            'slug' => $slug,
+            'summary' => trim((string) ($data['summary'] ?? '')),
+            'content' => trim((string) ($data['content'] ?? '')),
+            'status' => trim((string) $data['status']),
+            'created_at' => now()->toIso8601String(),
+            'updated_at' => now()->toIso8601String(),
+        ];
+        $targetId = $newId;
+    }
+
+    saveCustomPages($pages);
+
+    return redirect()->route('admin.pages', ['edit' => $targetId])
+        ->with('page_saved', 'Page saved successfully.');
+})->name('admin.pages.save');
+
+Route::post('/admin/pages/{id}/delete', function ($id) {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $targetId = (int) $id;
+    $pages = collect(loadCustomPages());
+    $exists = $pages->contains(fn ($page) => is_array($page) && (int) ($page['id'] ?? 0) === $targetId);
+    if (!$exists) {
+        return back()->with('page_deleted', 'Page not found.');
+    }
+
+    saveCustomPages(
+        $pages
+            ->reject(fn ($page) => is_array($page) && (int) ($page['id'] ?? 0) === $targetId)
+            ->values()
+            ->all()
+    );
+
+    return redirect()->route('admin.pages')->with('page_deleted', 'Page deleted successfully.');
+})->name('admin.pages.delete');
+
+Route::get('/pages/{slug}', function ($slug) {
+    $page = collect(loadCustomPages())->first(function ($item) use ($slug) {
+        if (!is_array($item)) {
+            return false;
+        }
+
+        return strtolower(trim((string) ($item['slug'] ?? ''))) === strtolower(trim((string) $slug))
+            && strtolower(trim((string) ($item['status'] ?? 'draft'))) === 'published';
+    });
+
+    if (!$page) {
+        abort(404);
+    }
+
+    return view('page', [
+        'page' => $page,
+        'navPages' => array_slice(publishedCustomPages(), 0, 2),
+    ]);
+})->name('page.show');

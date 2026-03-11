@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Homepage | BoomPapers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent:#f25c3c; --dark:#1c1c28; --muted:#6b6b7a; --border:#e5e8ed; --bg:#f7f8fb; --card:#ffffff; --green:#0f5951; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family:'Manrope',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--dark); }
+        .layout { display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+        .sidebar { background:#fff; border-right:1px solid var(--border); padding:24px; display:grid; gap:26px; }
+        .brand { display:flex; align-items:center; gap:12px; font-size:24px; font-weight:800; }
+        .brand .icon { width:44px; height:44px; border-radius:14px; background:var(--accent); display:grid; place-items:center; color:#fff; font-size:22px; }
+        .nav-group { display:grid; gap:8px; }
+        .nav-title { font-size:12px; letter-spacing:0.4px; text-transform:uppercase; color:var(--muted); font-weight:800; }
+        .nav-link { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; color:#2f3236; font-weight:800; text-decoration:none; }
+        .nav-link.active, .nav-link:hover { background:#fff2ec; color:var(--accent); }
+        .content { padding:24px 28px 40px; display:grid; gap:16px; }
+        .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        .btn { border:none; border-radius:12px; padding:12px 16px; font-weight:900; cursor:pointer; text-decoration:none; }
+        .btn-primary { background:var(--accent); color:#fff; }
+        .hint { font-size:13px; color:var(--muted); font-weight:700; }
+        .ok { background:#e7f8ee; color:#1f9b55; padding:10px 12px; border-radius:10px; font-weight:800; }
+        .err { background:#fde9e9; color:#c53030; padding:10px 12px; border-radius:10px; font-weight:800; }
+        .panel { background:#fff; border:1px solid var(--border); border-radius:18px; padding:20px; box-shadow:0 18px 40px rgba(17,42,72,0.05); }
+        .panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+        .panel-head h2 { margin:0; font-size:16px; letter-spacing:0.3px; text-transform:uppercase; }
+        .panel-note { color:var(--muted); font-weight:700; }
+        .grid-3 { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; }
+        .grid-2 { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+        .field { display:grid; gap:8px; }
+        label { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; color:#5c6476; }
+        input, textarea { width:100%; border:1px solid var(--border); border-radius:12px; padding:12px 14px; font:inherit; }
+        textarea { min-height:120px; resize:vertical; }
+        .color-row { display:flex; gap:10px; align-items:center; }
+        .color-row input[type="color"] { width:56px; padding:4px; height:44px; }
+        .footer-actions { display:flex; justify-content:flex-end; }
+        @media (max-width: 1100px) {
+            .layout { grid-template-columns:1fr; }
+            .topbar, .panel-head, .grid-3, .grid-2 { grid-template-columns:1fr; display:grid; }
+        }
+    </style>
+</head>
+<body>
+@php
+    $homepage = $homepageContent ?? \defaultHomepageContent();
+    $hero = $homepage['hero'] ?? [];
+    $badges = collect($homepage['badges'] ?? [])->pad(3, ['value' => '', 'label' => '', 'color' => '#1d7bff'])->values();
+    $cards = collect($homepage['cards'] ?? [])->pad(4, ['title' => '', 'detail' => ''])->values();
+@endphp
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand"><span class="icon">*</span><span>Admin</span></div>
+        <div class="nav-group">
+            <div class="nav-title">Main</div>
+            <a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a>
+            <a class="nav-link" href="{{ route('order.create') }}">Add Order</a>
+            <a class="nav-link" href="{{ route('admin.orders') }}">Orders</a>
+            <a class="nav-link" href="{{ route('admin.courses') }}">Courses</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Manage Users</div>
+            <a class="nav-link" href="{{ route('admin.clients') }}">Clients</a>
+            <a class="nav-link" href="{{ route('admin.writers') }}">Writers</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Configs</div>
+            <a class="nav-link" href="{{ route('admin.settings') }}">Settings</a>
+            <a class="nav-link active" href="{{ route('admin.homepage') }}">Homepage Content</a>
+            <a class="nav-link" href="{{ route('admin.pages') }}">Pages</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Account</div>
+            <a class="nav-link" href="{{ route('admin.logout') }}">Logout</a>
+        </div>
+    </aside>
+
+    <main class="content">
+        <div class="topbar">
+            <div>
+                <div style="font-size:14px; color:var(--muted); font-weight:700;">Homepage Content</div>
+                <div style="font-size:28px; font-weight:900;">Homepage Content Editor</div>
+            </div>
+            <button form="homepageForm" type="submit" class="btn btn-primary">Save Homepage</button>
+        </div>
+
+        <div class="hint">Update hero copy, trust badges, highlight cards, and the long-form homepage content shown on the public site.</div>
+
+        @if(session('homepage_saved'))
+            <div class="ok">{{ session('homepage_saved') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="err">{{ $errors->first() }}</div>
+        @endif
+
+        <form id="homepageForm" action="{{ route('admin.homepage.update') }}" method="POST" style="display:grid; gap:16px;">
+            @csrf
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Hero Section</h2>
+                    <div class="panel-note">Main copy shown above the fold.</div>
+                </div>
+                <div class="grid-3">
+                    <div class="field">
+                        <label for="hero_eyebrow">Eyebrow</label>
+                        <input id="hero_eyebrow" name="hero_eyebrow" value="{{ old('hero_eyebrow', $hero['eyebrow'] ?? '') }}" required>
+                    </div>
+                    <div class="field">
+                        <label for="hero_cta_pill">CTA Pill</label>
+                        <input id="hero_cta_pill" name="hero_cta_pill" value="{{ old('hero_cta_pill', $hero['cta_pill'] ?? '') }}" required>
+                    </div>
+                    <div class="field">
+                        <label for="hero_title_prefix">Hero Title Prefix</label>
+                        <input id="hero_title_prefix" name="hero_title_prefix" value="{{ old('hero_title_prefix', $hero['title_prefix'] ?? '') }}" required>
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top:14px;">
+                    <div class="field">
+                        <label for="hero_title_highlight">Hero Title Highlight</label>
+                        <input id="hero_title_highlight" name="hero_title_highlight" value="{{ old('hero_title_highlight', $hero['title_highlight'] ?? '') }}" required>
+                    </div>
+                    <div class="field">
+                        <label for="hero_title_suffix">Hero Title Suffix</label>
+                        <input id="hero_title_suffix" name="hero_title_suffix" value="{{ old('hero_title_suffix', $hero['title_suffix'] ?? '') }}" required>
+                    </div>
+                </div>
+                <div class="field" style="margin-top:14px;">
+                    <label for="hero_description">Hero Description</label>
+                    <textarea id="hero_description" name="hero_description" required>{{ old('hero_description', $hero['description'] ?? '') }}</textarea>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Trust Badges</h2>
+                    <div class="panel-note">Three badges shown under the hero call to action.</div>
+                </div>
+                <div class="grid-3">
+                    @foreach($badges as $index => $badge)
+                        <div class="field">
+                            <label>Badge {{ $index + 1 }}</label>
+                            <input name="badge_value_{{ $index + 1 }}" value="{{ old('badge_value_'.($index + 1), $badge['value'] ?? '') }}" placeholder="4.9*" required>
+                            <input name="badge_label_{{ $index + 1 }}" value="{{ old('badge_label_'.($index + 1), $badge['label'] ?? '') }}" placeholder="Trustpilot" required>
+                            <div class="color-row">
+                                <input type="color" name="badge_color_{{ $index + 1 }}" value="{{ old('badge_color_'.($index + 1), $badge['color'] ?? '#1d7bff') }}" required>
+                                <input value="{{ old('badge_color_'.($index + 1), $badge['color'] ?? '#1d7bff') }}" disabled>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Highlight Cards</h2>
+                    <div class="panel-note">Floating cards displayed on the right side of the hero.</div>
+                </div>
+                <div class="grid-2">
+                    @foreach($cards as $index => $card)
+                        <div class="field">
+                            <label for="card_title_{{ $index + 1 }}">Card {{ $index + 1 }} Title</label>
+                            <input id="card_title_{{ $index + 1 }}" name="card_title_{{ $index + 1 }}" value="{{ old('card_title_'.($index + 1), $card['title'] ?? '') }}" required>
+                            <label for="card_detail_{{ $index + 1 }}">Card {{ $index + 1 }} Detail</label>
+                            <input id="card_detail_{{ $index + 1 }}" name="card_detail_{{ $index + 1 }}" value="{{ old('card_detail_'.($index + 1), $card['detail'] ?? '') }}" required>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Home Page Content (SEO)</h2>
+                    <div class="panel-note">HTML is supported. Headings, lists, links, and paragraphs render on the homepage.</div>
+                </div>
+                <div class="field">
+                    <label for="seo_html">SEO Content</label>
+                    <textarea id="seo_html" name="seo_html" style="min-height:320px;">{{ old('seo_html', $homepage['seo_html'] ?? '') }}</textarea>
+                </div>
+            </section>
+
+            <div class="footer-actions">
+                <button type="submit" class="btn btn-primary">Save Homepage</button>
+            </div>
+        </form>
+    </main>
+</div>
+</body>
+</html>

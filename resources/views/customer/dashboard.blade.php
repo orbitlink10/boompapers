@@ -25,73 +25,71 @@
         }
         .layout {
             display: grid;
-            grid-template-columns: 220px 1fr;
+            grid-template-columns: 240px 1fr;
             min-height: 100vh;
         }
         .sidebar {
-            background: linear-gradient(180deg, #0f2a54 0%, #18447f 100%);
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 18px 12px;
-            display: grid;
-            gap: 12px;
+            background:#fff;
+            border-right:1px solid var(--border);
+            padding:24px;
+            display:flex;
+            flex-direction:column;
+            gap:18px;
         }
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 20px;
+            gap: 12px;
+            font-size: 24px;
             font-weight: 800;
-            color: #f1f7ff;
+            color: #1d1f22;
         }
         .brand .icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 11px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            width:44px;
+            height:44px;
+            border-radius:14px;
+            background:#0f5951;
             display: grid;
             place-items: center;
-            color: #dce8ff;
-            font-size: 17px;
+            color:#fff;
+            font-size:22px;
         }
-        .menu-list {
-            display: grid;
-            gap: 6px;
-            margin-top: 2px;
+        .nav-group {
+            display:flex;
+            flex-direction:column;
+            gap:8px;
         }
-        .menu-link {
+        .nav-title {
+            font-size:12px;
+            letter-spacing:0.4px;
+            text-transform:uppercase;
+            color:var(--muted);
+            font-weight:800;
+        }
+        .nav-link {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 4px 6px;
-            border-radius: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
             text-decoration: none;
-            transition: background .12s ease, color .12s ease, transform .12s ease;
-            color: #d6e3fb;
+            color:#2f3236;
+            font-weight:800;
+            transition: background .12s ease, color .12s ease;
         }
-        .menu-link:hover, .menu-link.active {
-            background: rgba(255, 255, 255, 0.08);
-            color: #f4f8ff;
-            transform: translateX(2px);
+        .nav-link.active,
+        .nav-link:hover {
+            background:#ecf3f1;
+            color:var(--green);
         }
-        .menu-icon {
-            width: 32px;
-            height: 32px;
+        .badge {
+            margin-left:auto;
+            background:#0f5951;
+            color:#fff;
             border-radius: 10px;
-            border: 1px solid rgba(186, 203, 232, 0.35);
-            background: rgba(140, 167, 214, 0.2);
-            color: #dce8ff;
-            display: grid;
-            place-items: center;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.4px;
-            flex: 0 0 auto;
-        }
-        .menu-text {
-            font-size: 15px;
-            line-height: 1.2;
-            font-weight: 700;
+            padding:4px 9px;
+            font-size:12px;
+            font-weight:800;
         }
         .content {
             padding: 24px 28px 40px;
@@ -217,7 +215,7 @@
         }
         @media (max-width: 1000px) {
             .layout { grid-template-columns: 1fr; }
-            .sidebar { padding: 14px 10px; }
+            .sidebar { gap:14px; padding:18px; }
         }
     </style>
 </head>
@@ -225,36 +223,22 @@
 <div class="layout">
     <aside class="sidebar">
         <div class="brand"><span class="icon">◎</span><span>MyAccount</span></div>
-        <nav class="menu-list">
-            <a class="menu-link" href="{{ route('order.create') }}">
-                <span class="menu-icon">NO</span>
-                <span class="menu-text">New Order</span>
-            </a>
-            <a class="menu-link active" href="{{ route('customer.dashboard') }}">
-                <span class="menu-icon">OR</span>
-                <span class="menu-text">Orders</span>
-            </a>
-            <a class="menu-link" href="#">
-                <span class="menu-icon">WA</span>
-                <span class="menu-text">Wallet</span>
-            </a>
-            <a class="menu-link" href="#">
-                <span class="menu-icon">CO</span>
-                <span class="menu-text">Courses</span>
-            </a>
-            <a class="menu-link" href="#">
-                <span class="menu-icon">TW</span>
-                <span class="menu-text">Top Writers</span>
-            </a>
-            <a class="menu-link" href="#">
-                <span class="menu-icon">PR</span>
-                <span class="menu-text">Profile</span>
-            </a>
-            <a class="menu-link" href="{{ route('customer.logout') }}">
-                <span class="menu-icon">LO</span>
-                <span class="menu-text">Logout</span>
-            </a>
-        </nav>
+        <div class="nav-group">
+            <div class="nav-title">Main Menu</div>
+            <a class="nav-link" href="{{ route('order.create') }}">New Order</a>
+            <a class="nav-link active" href="{{ route('customer.dashboard') }}">Orders <span class="badge">{{ $orderCount ?? count($orders ?? []) }}</span></a>
+            <a class="nav-link" href="#">Wallet <span class="badge">$0</span></a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Listing</div>
+            <a class="nav-link" href="#">Courses</a>
+            <a class="nav-link" href="#">Top Writers</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Account</div>
+            <a class="nav-link" href="#">Profile</a>
+            <a class="nav-link" href="{{ route('customer.logout') }}">Logout</a>
+        </div>
     </aside>
 
     <main class="content">

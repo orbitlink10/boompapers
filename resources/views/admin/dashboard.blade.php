@@ -285,7 +285,8 @@
             <div class="nav-title">Configs</div>
             <a class="nav-link" href="{{ route('admin.orders') }}"><span>Mass Email</span></a>
             <a class="nav-link" href="{{ route('admin.settings') }}"><span>Settings</span></a>
-            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Configs</span></a>
+            <a class="nav-link" href="{{ route('admin.homepage') }}"><span>Homepage Content</span></a>
+            <a class="nav-link" href="{{ route('admin.pages') }}"><span>Pages</span></a>
         </div>
     </aside>
 

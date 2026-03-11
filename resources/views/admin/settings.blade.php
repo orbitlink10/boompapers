@@ -54,6 +54,8 @@
         <div class="nav-group">
             <div class="nav-title">Configs</div>
             <a class="nav-link active" href="{{ route('admin.settings') }}">Settings</a>
+            <a class="nav-link" href="{{ route('admin.homepage') }}">Homepage Content</a>
+            <a class="nav-link" href="{{ route('admin.pages') }}">Pages</a>
         </div>
         <div class="nav-group">
             <div class="nav-title">Account</div>
