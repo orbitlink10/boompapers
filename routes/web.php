@@ -283,13 +283,23 @@ if (!function_exists('ordersForCustomer')) {
     }
 }
 
+if (!function_exists('normalizeOrderFileSource')) {
+    function normalizeOrderFileSource(?string $source): string
+    {
+        $source = strtolower(trim((string) $source));
+
+        return in_array($source, ['customer', 'writer'], true) ? $source : 'customer';
+    }
+}
+
 if (!function_exists('storeOrderFiles')) {
-    function storeOrderFiles(array $files, int $orderId): void
+    function storeOrderFiles(array $files, int $orderId, string $source = 'customer'): void
     {
         if (empty($files)) {
             return;
         }
 
+        $source = normalizeOrderFileSource($source);
         $stored = session('order_files', []);
         $dir = storage_path('app/uploads');
         if (!is_dir($dir)) {
@@ -308,10 +318,39 @@ if (!function_exists('storeOrderFiles')) {
                 'name' => $file->getClientOriginalName(),
                 'path' => $name,
                 'date' => now()->toDateTimeString(),
+                'source' => $source,
             ];
         }
 
         session(['order_files' => $stored]);
+    }
+}
+
+if (!function_exists('orderFilesFor')) {
+    function orderFilesFor(int $orderId, ?string $source = null): array
+    {
+        $files = collect(session('order_files', []))
+            ->filter(fn ($file) => (int) ($file['order_id'] ?? 0) === $orderId)
+            ->map(function ($file) {
+                if (!is_array($file)) {
+                    return null;
+                }
+
+                $file['source'] = normalizeOrderFileSource($file['source'] ?? 'customer');
+
+                return $file;
+            })
+            ->filter()
+            ->values();
+
+        if ($source !== null) {
+            $normalizedSource = normalizeOrderFileSource($source);
+            $files = $files
+                ->filter(fn ($file) => ($file['source'] ?? 'customer') === $normalizedSource)
+                ->values();
+        }
+
+        return $files->all();
     }
 }
 
@@ -749,10 +788,7 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             $isTakeable = $isAvailable($order);
             $canViewOrderStatus = $isAssignedToCurrent || $isTakeable;
 
-            $files = collect(session('order_files', []))
-                ->where('order_id', (int) ($order['id'] ?? 0))
-                ->values()
-                ->all();
+            $files = orderFilesFor((int) ($order['id'] ?? 0), 'writer');
 
             return [
                 'id' => $order['id'] ?? null,
@@ -831,10 +867,8 @@ Route::get('/writer/orders/{id}', function ($id) {
         return redirect()->route('writer.dashboard')->with('error', 'You cannot view that order.');
     }
 
-    $files = collect(session('order_files', []))
-        ->where('order_id', (int) $id)
-        ->values()
-        ->all();
+    $orderFiles = orderFilesFor((int) $id, 'customer');
+    $writerFiles = orderFilesFor((int) $id, 'writer');
 
     $statusOptions = [
         'assigned' => 'Assigned',
@@ -847,7 +881,8 @@ Route::get('/writer/orders/{id}', function ($id) {
 
     return view('writer.order-show', [
         'order' => $order,
-        'files' => $files,
+        'orderFiles' => $orderFiles,
+        'writerFiles' => $writerFiles,
         'canTake' => $isAvailable,
         'isAssignedToCurrent' => $isMine,
         'statusOptions' => $statusOptions,
@@ -976,8 +1011,10 @@ Route::post('/writer/orders/{id}/status', function (\Illuminate\Http\Request $re
     $targetMenu = 'assigned';
     if ($newStatus === 'revision') {
         $targetMenu = 'revision';
-    } elseif (in_array($newStatus, ['completed', 'approved'], true)) {
+    } elseif ($newStatus === 'completed') {
         $targetMenu = 'completed';
+    } elseif ($newStatus === 'approved') {
+        $targetMenu = 'approved';
     }
 
     return redirect()->route('writer.dashboard', ['menu' => $targetMenu])
@@ -1009,7 +1046,7 @@ Route::post('/writer/orders/{id}/files', function (\Illuminate\Http\Request $req
         'files.*' => 'file|max:5120',
     ]);
 
-    storeOrderFiles($request->file('files', []), (int) $id);
+    storeOrderFiles($request->file('files', []), (int) $id, 'writer');
     return back()->with('uploaded', 'Files uploaded successfully.');
 })->name('writer.order.files');
 
@@ -1155,10 +1192,12 @@ Route::get('/customer/orders/{id}', function ($id) {
     if (!$order) {
         return redirect()->route('customer.dashboard');
     }
-    $files = collect(session('order_files', []))->where('order_id', (int)$id)->values()->all();
+    $orderFiles = orderFilesFor((int) $id, 'customer');
+    $writerFiles = orderFilesFor((int) $id, 'writer');
     return view('customer.order', [
         'order' => $order,
-        'files' => $files,
+        'orderFiles' => $orderFiles,
+        'writerFiles' => $writerFiles,
         'orderCount' => count($orders),
     ]);
 })->name('customer.order.show');
@@ -1390,8 +1429,13 @@ Route::get('/admin/orders/{id}', function ($id) {
     if (!$order) {
         return redirect()->route('admin.orders');
     }
-    $files = collect(session('order_files', []))->where('order_id', (int)$id)->values()->all();
-    return view('admin.order-show', ['order' => $order, 'files' => $files]);
+    $orderFiles = orderFilesFor((int) $id, 'customer');
+    $writerFiles = orderFilesFor((int) $id, 'writer');
+    return view('admin.order-show', [
+        'order' => $order,
+        'orderFiles' => $orderFiles,
+        'writerFiles' => $writerFiles,
+    ]);
 })->name('admin.order.show');
 
 Route::get('/admin/courses', function () {

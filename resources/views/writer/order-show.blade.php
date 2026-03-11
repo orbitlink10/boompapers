@@ -420,9 +420,9 @@
                 </div>
 
                 <h2 class="panel-title" style="margin-top:22px;">Order Files</h2>
-                @if(!empty($files))
+                @if(!empty($orderFiles ?? []))
                     <div class="file-list">
-                        @foreach($files as $file)
+                        @foreach(($orderFiles ?? []) as $file)
                             <div class="file-item">
                                 <div class="file-name">{{ $file['name'] }}</div>
                                 <div class="file-date">{{ $file['date'] }}</div>
@@ -430,7 +430,21 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="empty">No files uploaded yet.</div>
+                    <div class="empty">No order files uploaded yet.</div>
+                @endif
+
+                <h2 class="panel-title" style="margin-top:22px;">Writer Files</h2>
+                @if(!empty($writerFiles ?? []))
+                    <div class="file-list">
+                        @foreach(($writerFiles ?? []) as $file)
+                            <div class="file-item">
+                                <div class="file-name">{{ $file['name'] }}</div>
+                                <div class="file-date">{{ $file['date'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty">No writer files uploaded yet.</div>
                 @endif
             </section>
         </div>

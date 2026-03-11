@@ -748,7 +748,7 @@
                                                     <button class="btn btn-light" type="submit">Upload Files</button>
                                                 </form>
                                                 @if(($order['files_count'] ?? 0) > 0)
-                                                    <div class="file-note">{{ $order['files_count'] }} file(s)</div>
+                                                    <div class="file-note">{{ $order['files_count'] }} writer file(s)</div>
                                                 @endif
                                             @else
                                                 <div class="meta">Not available</div>

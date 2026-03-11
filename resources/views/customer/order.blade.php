@@ -131,21 +131,34 @@
         <div class="files-section">
             <h3 style="margin:0 0 6px 0;">Writer File(s)</h3>
             <hr style="border:none; border-top:1px solid var(--border); margin:8px 0 14px;">
-            <p style="color:var(--muted); font-weight:700;">No writer files yet.</p>
-
-            <h3 style="margin:10px 0 6px 0;">Order File(s)</h3>
-            <hr style="border:none; border-top:1px solid var(--border); margin:8px 0 14px;">
             <table>
                 <thead><tr><th>#</th><th>File</th><th>Date</th></tr></thead>
                 <tbody>
-                @forelse($files as $idx => $file)
+                @forelse(($writerFiles ?? []) as $idx => $file)
                     <tr>
                         <td>{{ $idx + 1 }}</td>
                         <td>{{ $file['name'] }}</td>
                         <td>{{ $file['date'] }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" style="text-align:center; color:var(--muted); font-weight:800;">No files uploaded</td></tr>
+                    <tr><td colspan="3" style="text-align:center; color:var(--muted); font-weight:800;">No writer files uploaded</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+
+            <h3 style="margin:10px 0 6px 0;">Order File(s)</h3>
+            <hr style="border:none; border-top:1px solid var(--border); margin:8px 0 14px;">
+            <table>
+                <thead><tr><th>#</th><th>File</th><th>Date</th></tr></thead>
+                <tbody>
+                @forelse(($orderFiles ?? []) as $idx => $file)
+                    <tr>
+                        <td>{{ $idx + 1 }}</td>
+                        <td>{{ $file['name'] }}</td>
+                        <td>{{ $file['date'] }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="3" style="text-align:center; color:var(--muted); font-weight:800;">No order files uploaded</td></tr>
                 @endforelse
                 </tbody>
             </table>
