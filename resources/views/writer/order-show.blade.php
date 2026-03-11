@@ -274,7 +274,14 @@
         }
 
         .file-name {
+            color: var(--accent);
             font-weight: 800;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .file-name:hover {
+            color: #495bb8;
         }
 
         .file-date {
@@ -424,7 +431,7 @@
                     <div class="file-list">
                         @foreach(($orderFiles ?? []) as $file)
                             <div class="file-item">
-                                <div class="file-name">{{ $file['name'] }}</div>
+                                <a class="file-name" href="{{ route('order.file.download', ['id' => $order['id'], 'file' => $file['path']]) }}">{{ $file['name'] }}</a>
                                 <div class="file-date">{{ $file['date'] }}</div>
                             </div>
                         @endforeach
@@ -438,7 +445,7 @@
                     <div class="file-list">
                         @foreach(($writerFiles ?? []) as $file)
                             <div class="file-item">
-                                <div class="file-name">{{ $file['name'] }}</div>
+                                <a class="file-name" href="{{ route('order.file.download', ['id' => $order['id'], 'file' => $file['path']]) }}">{{ $file['name'] }}</a>
                                 <div class="file-date">{{ $file['date'] }}</div>
                             </div>
                         @endforeach

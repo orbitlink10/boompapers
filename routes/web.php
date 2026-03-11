@@ -354,6 +354,19 @@ if (!function_exists('orderFilesFor')) {
     }
 }
 
+if (!function_exists('findOrderFileFor')) {
+    function findOrderFileFor(int $orderId, ?string $path): ?array
+    {
+        $path = basename(trim((string) $path));
+        if ($path === '') {
+            return null;
+        }
+
+        return collect(orderFilesFor($orderId))
+            ->first(fn ($file) => basename((string) ($file['path'] ?? '')) === $path);
+    }
+}
+
 if (!function_exists('pricingLevels')) {
     function pricingLevels(): array
     {
@@ -1221,6 +1234,63 @@ Route::post('/customer/orders/{id}/files', function (\Illuminate\Http\Request $r
 
     return back()->with('uploaded', 'Files uploaded successfully.');
 })->name('customer.order.files');
+
+Route::get('/orders/{id}/files/{file}', function ($id, $file) {
+    $targetId = (int) $id;
+    $order = collect(loadOrders())->firstWhere('id', $targetId);
+    if (!$order || !is_array($order)) {
+        abort(404);
+    }
+
+    $canAccess = false;
+
+    if (session('admin_logged_in')) {
+        $canAccess = true;
+    } elseif (session('customer_logged_in')) {
+        $customerEmail = trim((string) session('customer_email', ''));
+        $orderCustomerEmail = trim((string) ($order['customer_email'] ?? ''));
+        $canAccess = $customerEmail !== ''
+            && $orderCustomerEmail !== ''
+            && strcasecmp($customerEmail, $orderCustomerEmail) === 0;
+    } elseif (session('writer_logged_in')) {
+        $writerId = (int) (session('writer_id') ?? 0);
+        $writerName = trim((string) (session('writer_name') ?? ''));
+        $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
+        $assignedId = (int) ($order['writer_id'] ?? 0);
+        $assignedName = trim((string) ($order['writer_name'] ?? ''));
+        $assignedEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+        $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+        $isMine = $writerId > 0 && $assignedId === $writerId
+            || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0)
+            || ($writerEmail !== '' && $assignedEmail !== '' && strcasecmp($assignedEmail, $writerEmail) === 0);
+        $isAvailable = $assignedId <= 0
+            && $assignedName === ''
+            && $assignedEmail === ''
+            && in_array($status, ['pending', 'available'], true);
+        $canAccess = $isMine || $isAvailable;
+    }
+
+    if (!$canAccess) {
+        abort(404);
+    }
+
+    $storedFile = findOrderFileFor($targetId, (string) $file);
+    if (!$storedFile) {
+        abort(404);
+    }
+
+    $storedPath = basename((string) ($storedFile['path'] ?? ''));
+    if ($storedPath === '') {
+        abort(404);
+    }
+
+    $fullPath = storage_path('app/uploads/' . $storedPath);
+    if (!is_file($fullPath)) {
+        abort(404);
+    }
+
+    return response()->download($fullPath, (string) ($storedFile['name'] ?? $storedPath));
+})->where('file', '.*')->name('order.file.download');
 
 Route::get('/admin/login', function () {
     return view('admin.login');

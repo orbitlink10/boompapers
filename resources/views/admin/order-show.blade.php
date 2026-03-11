@@ -32,6 +32,8 @@
         table{width:100%;border-collapse:collapse;}
         th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;}
         th{font-weight:900;}
+        .file-link{color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:2px;}
+        .file-link:hover{color:#0b4a44;}
         .upload{margin-top:12px;display:grid;gap:10px;}
         .btn{border:none;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;}
         .btn-primary{background:var(--accent);color:#fff;}
@@ -128,7 +130,7 @@
                 @forelse(($orderFiles ?? []) as $idx => $file)
                     <tr>
                         <td>{{ $idx + 1 }}</td>
-                        <td>{{ $file['name'] }}</td>
+                        <td><a class="file-link" href="{{ route('order.file.download', ['id' => $order['id'], 'file' => $file['path']]) }}">{{ $file['name'] }}</a></td>
                         <td>{{ $file['date'] }}</td>
                     </tr>
                 @empty
@@ -145,7 +147,7 @@
                 @forelse(($writerFiles ?? []) as $idx => $file)
                     <tr>
                         <td>{{ $idx + 1 }}</td>
-                        <td>{{ $file['name'] }}</td>
+                        <td><a class="file-link" href="{{ route('order.file.download', ['id' => $order['id'], 'file' => $file['path']]) }}">{{ $file['name'] }}</a></td>
                         <td>{{ $file['date'] }}</td>
                     </tr>
                 @empty
