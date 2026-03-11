@@ -135,8 +135,36 @@
             gap: 10px;
             font-weight: 800;
             box-shadow: 0 12px 28px rgba(0,0,0,0.04);
+            color: inherit;
+            text-decoration: none;
+            transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+        }
+        .chip:hover {
+            transform: translateY(-1px);
+            border-color: rgba(15, 89, 81, 0.3);
+            box-shadow: 0 16px 30px rgba(17, 42, 72, 0.08);
+        }
+        .chip.active {
+            border-color: rgba(15, 89, 81, 0.45);
+            box-shadow: 0 0 0 1px rgba(15, 89, 81, 0.1), 0 16px 30px rgba(17, 42, 72, 0.08);
         }
         .chip .count { margin-left: auto; color: var(--green); }
+        .filter-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.04);
+        }
+        .filter-banner a {
+            color: var(--green);
+            font-weight: 800;
+            text-decoration: none;
+        }
         .table-card {
             background: var(--card);
             border: 1px solid var(--border);
@@ -251,19 +279,29 @@
 
         @php
             $orders = $orders ?? [];
-            $count = fn($status) => collect($orders)->where('status', $status)->count();
+            $statusCards = $statusCards ?? [];
+            $statusFilter = $statusFilter ?? 'all';
+            $selectedStatusLabel = $selectedStatusLabel ?? null;
         @endphp
         <div class="chips">
-            <div class="chip">Assigned <span class="count">({{ $count('assigned') }})</span></div>
-            <div class="chip">Pending <span class="count">({{ $count('pending') }})</span></div>
-            <div class="chip">Bidding <span class="count">({{ $count('bidding') }})</span></div>
-            <div class="chip">In Progress <span class="count">({{ $count('inprogress') }})</span></div>
-            <div class="chip">Editing <span class="count">({{ $count('editing') }})</span></div>
-            <div class="chip">Completed <span class="count">({{ $count('completed') }})</span></div>
-            <div class="chip">Revision <span class="count">({{ $count('revision') }})</span></div>
-            <div class="chip">Approved <span class="count">({{ $count('approved') }})</span></div>
-            <div class="chip">Cancelled <span class="count">({{ $count('cancelled') }})</span></div>
+            @foreach($statusCards as $card)
+                <a
+                    class="chip {{ !empty($card['active']) ? 'active' : '' }}"
+                    href="{{ $card['url'] }}"
+                    title="{{ ($card['count'] ?? 0) === 1 ? 'Open this order' : 'Show '.$card['label'].' orders' }}"
+                >
+                    <span>{{ $card['label'] }}</span>
+                    <span class="count">({{ $card['count'] ?? 0 }})</span>
+                </a>
+            @endforeach
         </div>
+
+        @if($statusFilter !== 'all' && $selectedStatusLabel)
+            <div class="filter-banner">
+                <div style="font-weight:800;">Showing {{ $selectedStatusLabel }} orders</div>
+                <a href="{{ route('customer.dashboard') }}">Show all orders</a>
+            </div>
+        @endif
 
         <div class="table-card">
             <table>
@@ -298,7 +336,7 @@
                         <td><span class="status {{ $order['status'] }}">{{ ucwords(str_replace('inprogress', 'in progress', $order['status'] ?? 'pending')) }}</span></td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted); font-weight:800;">No orders yet</td></tr>
+                    <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted); font-weight:800;">{{ $statusFilter === 'all' ? 'No orders yet' : 'No orders in this status' }}</td></tr>
                 @endforelse
                 </tbody>
             </table>

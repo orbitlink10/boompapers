@@ -545,10 +545,12 @@
         $assignedItem = collect($menuItems ?? [])->firstWhere('key', 'assigned') ?? [];
         $revisionItem = collect($menuItems ?? [])->firstWhere('key', 'revision') ?? [];
         $completedItem = collect($menuItems ?? [])->firstWhere('key', 'completed') ?? [];
+        $approvedItem = collect($menuItems ?? [])->firstWhere('key', 'approved') ?? [];
         $availableCount = $availableItem['count'] ?? 0;
         $assignedCount = $assignedItem['count'] ?? 0;
         $revisionCount = $revisionItem['count'] ?? 0;
         $completedCount = $completedItem['count'] ?? 0;
+        $approvedCount = $approvedItem['count'] ?? 0;
     @endphp
     <div class="app-shell">
         <aside class="sidebar">
@@ -597,6 +599,14 @@
                         </svg>
                         <span>Completed</span>
                         <span class="nav-count">{{ $completedCount }}</span>
+                    </a>
+                    <a class="nav-link {{ ($menu ?? '') === 'approved' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'approved']) }}">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M9 12l2 2 4-4"></path>
+                            <path d="M12 3l7 4v5c0 5-3.4 8.4-7 9-3.6-.6-7-4-7-9V7l7-4Z"></path>
+                        </svg>
+                        <span>Approved</span>
+                        <span class="nav-count">{{ $approvedCount }}</span>
                     </a>
                 </div>
 

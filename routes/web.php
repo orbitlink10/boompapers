@@ -617,12 +617,12 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
     $writerName = trim((string) (session('writer_name') ?? ''));
     $writerEmail = strtolower(trim((string) (session('writer_email') ?? '')));
     $menu = strtolower(trim((string) $request->query('menu', 'available')));
-    if (!in_array($menu, ['available', 'assigned', 'revision', 'completed'], true)) {
+    if (!in_array($menu, ['available', 'assigned', 'revision', 'completed', 'approved'], true)) {
         $menu = 'available';
     }
 
     $activeAssignedStatuses = ['assigned', 'inprogress', 'editing'];
-    $completedStatuses = ['completed', 'approved'];
+    $completedStatuses = ['completed'];
     $statusOptions = [
         'assigned' => 'Assigned',
         'inprogress' => 'In Progress',
@@ -674,7 +674,11 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             return $status === 'revision';
         }
 
-        return in_array($status, $completedStatuses, true);
+        if ($selectedMenu === 'completed') {
+            return in_array($status, $completedStatuses, true);
+        }
+
+        return $status === 'approved';
     };
 
     $menuItems = [
@@ -703,8 +707,15 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             'key' => 'completed',
             'short' => 'CM',
             'label' => 'Completed',
-            'description' => 'Finished work and approvals.',
+            'description' => 'Finished work awaiting final approval.',
             'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'completed'))->count(),
+        ],
+        [
+            'key' => 'approved',
+            'short' => 'AP',
+            'label' => 'Approved',
+            'description' => 'Orders fully approved and closed.',
+            'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'approved'))->count(),
         ],
     ];
 
@@ -1002,14 +1013,65 @@ Route::post('/writer/orders/{id}/files', function (\Illuminate\Http\Request $req
     return back()->with('uploaded', 'Files uploaded successfully.');
 })->name('writer.order.files');
 
-Route::get('/customer/dashboard', function () {
+Route::get('/customer/dashboard', function (\Illuminate\Http\Request $request) {
     if (!session('customer_logged_in')) {
         return redirect()->route('order', ['tab' => 'existing']);
     }
     $orders = loadOrders();
-    $customerOrders = ordersForCustomer($orders, session('customer_email'));
+    $customerOrders = collect(ordersForCustomer($orders, session('customer_email')))
+        ->sortByDesc(fn ($order) => (int) ($order['id'] ?? 0))
+        ->values();
+    $statusFilter = strtolower(trim((string) $request->query('status', 'all')));
+    $statusCards = [
+        ['key' => 'assigned', 'label' => 'Assigned'],
+        ['key' => 'pending', 'label' => 'Pending'],
+        ['key' => 'bidding', 'label' => 'Bidding'],
+        ['key' => 'inprogress', 'label' => 'In Progress'],
+        ['key' => 'editing', 'label' => 'Editing'],
+        ['key' => 'completed', 'label' => 'Completed'],
+        ['key' => 'revision', 'label' => 'Revision'],
+        ['key' => 'approved', 'label' => 'Approved'],
+        ['key' => 'cancelled', 'label' => 'Cancelled'],
+    ];
+    $allowedStatuses = collect($statusCards)->pluck('key')->all();
 
-    return view('customer.dashboard', ['orders' => $customerOrders]);
+    if ($statusFilter !== 'all' && !in_array($statusFilter, $allowedStatuses, true)) {
+        $statusFilter = 'all';
+    }
+
+    $statusCards = collect($statusCards)
+        ->map(function (array $card) use ($customerOrders, $statusFilter) {
+            $matchingOrders = $customerOrders
+                ->filter(fn ($order) => strtolower(trim((string) ($order['status'] ?? 'pending'))) === $card['key'])
+                ->values();
+            $count = $matchingOrders->count();
+            $targetUrl = $count === 1
+                ? route('customer.order.show', ['id' => $matchingOrders->first()['id']])
+                : route('customer.dashboard', ['status' => $card['key']]);
+
+            return [
+                ...$card,
+                'count' => $count,
+                'url' => $targetUrl,
+                'active' => $statusFilter === $card['key'],
+            ];
+        })
+        ->all();
+
+    $visibleOrders = $statusFilter === 'all'
+        ? $customerOrders->all()
+        : $customerOrders
+            ->filter(fn ($order) => strtolower(trim((string) ($order['status'] ?? 'pending'))) === $statusFilter)
+            ->values()
+            ->all();
+    $selectedStatusLabel = collect($statusCards)->firstWhere('active', true)['label'] ?? null;
+
+    return view('customer.dashboard', [
+        'orders' => $visibleOrders,
+        'statusCards' => $statusCards,
+        'statusFilter' => $statusFilter,
+        'selectedStatusLabel' => $selectedStatusLabel,
+    ]);
 })->name('customer.dashboard');
 
 Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
