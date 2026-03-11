@@ -19,10 +19,10 @@
         * { box-sizing: border-box; }
         body { margin:0; font-family:'Manrope', system-ui, -apple-system, sans-serif; background: var(--bg); color:#1d1f22; }
         .layout { display:grid; grid-template-columns: 240px 1fr; min-height:100vh; }
-        .sidebar { background:#fff; border-right:1px solid var(--border); padding:24px; display:grid; gap:26px; }
+        .sidebar { background:#fff; border-right:1px solid var(--border); padding:24px; display:flex; flex-direction:column; gap:18px; }
         .brand { display:flex; align-items:center; gap:12px; font-size:24px; font-weight:800; }
         .brand .icon { width:44px; height:44px; border-radius:14px; background:#0f5951; display:grid; place-items:center; color:#fff; font-size:22px; }
-        .nav-group { display:grid; gap:8px; }
+        .nav-group { display:flex; flex-direction:column; gap:8px; }
         .nav-title { font-size:12px; letter-spacing:0.4px; text-transform:uppercase; color:var(--muted); font-weight:800; }
         .nav-link { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; color:#2f3236; font-weight:800; text-decoration:none; }
         .nav-link.active, .nav-link:hover { background:#ecf3f1; color:var(--green); }
@@ -48,7 +48,11 @@
         .pay { align-self:flex-start; padding:14px 18px; background:var(--accent); color:#0f172a; border-radius:12px; font-weight:900; border:none; cursor:pointer; }
         .right-panel { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; display:grid; gap:10px; }
         textarea { width:100%; min-height:90px; border:1px solid var(--border); border-radius:10px; padding:10px; font-weight:700; }
-        @media (max-width: 1100px) { .layout { grid-template-columns:1fr; } .topline { flex-direction:column; align-items:flex-start; } }
+        @media (max-width: 1100px) {
+            .layout { grid-template-columns:1fr; }
+            .sidebar { gap:14px; padding:18px; }
+            .topline { flex-direction:column; align-items:flex-start; }
+        }
     </style>
 </head>
 <body>
