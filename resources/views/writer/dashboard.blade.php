@@ -161,6 +161,7 @@
 
         .content {
             padding: 28px;
+            min-width: 0;
             display: grid;
             gap: 20px;
         }
@@ -261,6 +262,7 @@
             border: 1px solid #e5e5e5;
             border-radius: 22px;
             box-shadow: 0 18px 34px rgba(0, 0, 0, 0.05);
+            min-width: 0;
             overflow: hidden;
         }
 
@@ -309,8 +311,15 @@
             color: #666;
         }
 
+        .table-wrap {
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table {
             width: 100%;
+            min-width: 1180px;
             border-collapse: collapse;
         }
 
@@ -667,82 +676,84 @@
                     </div>
                 </div>
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Order</th>
-                            <th>Client</th>
-                            <th>Type</th>
-                            <th>Pages</th>
-                            <th>Deadline</th>
-                            <th>Status</th>
-                            <th>Assigned</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($orders as $order)
+                <div class="table-wrap">
+                    <table>
+                        <thead>
                             <tr>
-                                <td>
-                                    <a class="order-id" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">#{{ $order['id'] }}</a>
-                                </td>
-                                <td>
-                                    <a class="order-link" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">
-                                        <div class="order-title">{{ $order['title'] }}</div>
-                                        <div class="meta">{{ $order['subject'] }}</div>
-                                    </a>
-                                </td>
-                                <td>
-                                    <div>{{ $order['client_name'] }}</div>
-                                </td>
-                                <td>{{ $order['type'] }}</td>
-                                <td>{{ $order['pages'] }}</td>
-                                <td>
-                                    <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
-                                        {{ $order['writer_deadline'] }}
-                                    </span>
-                                </td>
-                                <td><span class="status {{ $order['status'] }}">{{ $order['status_label'] }}</span></td>
-                                <td>{{ $order['assigned_writer'] }}</td>
-                                <td>
-                                    <div class="order-actions">
-                                        @if($order['can_take'])
-                                            <form action="{{ route('writer.order.claim', ['id' => $order['id']]) }}" method="POST">
-                                                @csrf
-                                                <button class="btn btn-success" type="submit">Take Order</button>
-                                            </form>
-                                        @elseif($order['is_assigned_to_current'])
-                                            <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
-                                                @csrf
-                                                <select name="status" aria-label="Update order status">
-                                                    @foreach($order['status_options'] as $key => $value)
-                                                        <option value="{{ $key }}" {{ ($order['status'] === $key) ? 'selected' : '' }}>{{ $value }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <button class="btn btn-primary" type="submit">Update Status</button>
-                                            </form>
-                                            <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
-                                                @csrf
-                                                <input type="file" name="files[]" multiple>
-                                                <button class="btn btn-light" type="submit">Upload Files</button>
-                                            </form>
-                                            @if(($order['files_count'] ?? 0) > 0)
-                                                <div class="file-note">{{ $order['files_count'] }} file(s)</div>
+                                <th>#</th>
+                                <th>Order</th>
+                                <th>Client</th>
+                                <th>Type</th>
+                                <th>Pages</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Assigned</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($orders as $order)
+                                <tr>
+                                    <td>
+                                        <a class="order-id" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">#{{ $order['id'] }}</a>
+                                    </td>
+                                    <td>
+                                        <a class="order-link" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">
+                                            <div class="order-title">{{ $order['title'] }}</div>
+                                            <div class="meta">{{ $order['subject'] }}</div>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div>{{ $order['client_name'] }}</div>
+                                    </td>
+                                    <td>{{ $order['type'] }}</td>
+                                    <td>{{ $order['pages'] }}</td>
+                                    <td>
+                                        <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
+                                            {{ $order['writer_deadline'] }}
+                                        </span>
+                                    </td>
+                                    <td><span class="status {{ $order['status'] }}">{{ $order['status_label'] }}</span></td>
+                                    <td>{{ $order['assigned_writer'] }}</td>
+                                    <td>
+                                        <div class="order-actions">
+                                            @if($order['can_take'])
+                                                <form action="{{ route('writer.order.claim', ['id' => $order['id']]) }}" method="POST">
+                                                    @csrf
+                                                    <button class="btn btn-success" type="submit">Take Order</button>
+                                                </form>
+                                            @elseif($order['is_assigned_to_current'])
+                                                <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
+                                                    @csrf
+                                                    <select name="status" aria-label="Update order status">
+                                                        @foreach($order['status_options'] as $key => $value)
+                                                            <option value="{{ $key }}" {{ ($order['status'] === $key) ? 'selected' : '' }}>{{ $value }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button class="btn btn-primary" type="submit">Update Status</button>
+                                                </form>
+                                                <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="file" name="files[]" multiple>
+                                                    <button class="btn btn-light" type="submit">Upload Files</button>
+                                                </form>
+                                                @if(($order['files_count'] ?? 0) > 0)
+                                                    <div class="file-note">{{ $order['files_count'] }} file(s)</div>
+                                                @endif
+                                            @else
+                                                <div class="meta">Not available</div>
                                             @endif
-                                        @else
-                                            <div class="meta">Not available</div>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" class="empty">No orders in this queue right now.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="empty">No orders in this queue right now.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </section>
         </main>
     </div>
