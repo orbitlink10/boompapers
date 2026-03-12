@@ -258,10 +258,12 @@
             </div>
         </div>
 
-        <div class="search-bar">
-            <input type="text" placeholder="Search orders">
-            <button>Search</button>
-        </div>
+        @if(($statusFilter ?? 'all') === 'all')
+            <div class="search-bar">
+                <input type="text" placeholder="Search orders">
+                <button>Search</button>
+            </div>
+        @endif
 
         @php
             $orders = $orders ?? [];
@@ -269,23 +271,18 @@
             $statusFilter = $statusFilter ?? 'all';
             $selectedStatusLabel = $selectedStatusLabel ?? null;
         @endphp
-        <div class="chips">
-            @foreach($statusCards as $card)
-                <a
-                    class="chip {{ !empty($card['active']) ? 'active' : '' }}"
-                    href="{{ $card['url'] }}"
-                    title="{{ ($card['count'] ?? 0) === 1 ? 'Open this order' : 'Show '.$card['label'].' orders' }}"
-                >
-                    <span>{{ $card['label'] }}</span>
-                    <span class="count">({{ $card['count'] ?? 0 }})</span>
-                </a>
-            @endforeach
-        </div>
-
-        @if($statusFilter !== 'all' && $selectedStatusLabel)
-            <div class="filter-banner">
-                <div style="font-weight:800;">Showing {{ $selectedStatusLabel }} orders</div>
-                <a href="{{ route('customer.dashboard') }}">Show all orders</a>
+        @if($statusFilter === 'all')
+            <div class="chips">
+                @foreach($statusCards as $card)
+                    <a
+                        class="chip {{ !empty($card['active']) ? 'active' : '' }}"
+                        href="{{ $card['url'] }}"
+                        title="{{ ($card['count'] ?? 0) === 1 ? 'Open this order' : 'Show '.$card['label'].' orders' }}"
+                    >
+                        <span>{{ $card['label'] }}</span>
+                        <span class="count">({{ $card['count'] ?? 0 }})</span>
+                    </a>
+                @endforeach
             </div>
         @endif
 
