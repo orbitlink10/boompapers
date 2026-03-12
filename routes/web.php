@@ -487,7 +487,7 @@ if (!function_exists('defaultHomepageContent')) {
                 ['title' => 'Research Paper', 'detail' => 'Peer-reviewed · Structured'],
                 ['title' => 'Essay', 'detail' => 'Creative · Argumentative'],
             ],
-            'seo_html' => '<h2>Academic writing support that keeps standards high</h2><p>BoomPapers helps students move faster with structured research, clean formatting, and deadline-focused delivery. From essays and reports to discussion posts and research papers, each order is matched to a qualified writer and tracked inside one workspace.</p><p>Clients can place orders, upload files, review progress, and download completed work from one dashboard. Writers manage queues, deadlines, revisions, and uploaded files while admins keep pricing, homepage content, and custom pages under control from the panel.</p>',
+            'seo_html' => '<h2>Campus Management System Software in Kenya: Transforming Universities with Smart Technology</h2>',
         ];
     }
 }
