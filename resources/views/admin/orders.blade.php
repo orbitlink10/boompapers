@@ -20,10 +20,10 @@
         .nav-link{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;color:#2f3236;font-weight:800;text-decoration:none;}
         .nav-link.active,.nav-link:hover{background:#fff2ec;color:var(--accent);}
         .badge{margin-left:auto;background:#0f5951;color:#fff;border-radius:10px;padding:4px 9px;font-size:12px;font-weight:800;}
-        .content{padding:24px 28px 40px;display:grid;gap:16px;}
+        .content{padding:24px 28px 40px;display:grid;gap:16px;align-content:start;}
         .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-        .filters{display:flex;gap:8px;flex-wrap:wrap;}
-        .chip{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;font-weight:800;color:#2f3236;text-decoration:none;}
+        .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;}
+        .chip{display:inline-flex;align-items:center;align-self:flex-start;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;font-weight:800;color:#2f3236;text-decoration:none;}
         .chip.active{background:#0f5951;color:#fff;border-color:#0f5951;}
         table{width:100%;border-collapse:collapse;}
         th,td{padding:12px 14px;border-bottom:1px solid var(--border);text-align:left;font-size:14px;}

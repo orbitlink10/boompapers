@@ -1467,13 +1467,82 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
     if (!session('admin_logged_in')) {
         return redirect()->route('admin.login');
     }
-    $status = $request->query('status');
-    $orders = collect(loadOrders());
-    $allOrders = $orders;
-    if ($status) {
-        $orders = $orders->where('status', $status);
+    $normalizeAdminOrderStatus = function ($value): string {
+        $status = strtolower(trim((string) $value));
+
+        if ($status === '' || $status === 'bidding') {
+            return 'pending';
+        }
+
+        if ($status === 'inprogress') {
+            return 'editing';
+        }
+
+        return $status;
+    };
+
+    $statusOrder = array_flip([
+        'pending',
+        'available',
+        'assigned',
+        'editing',
+        'completed',
+        'revision',
+        'approved',
+        'cancelled',
+    ]);
+
+    $status = strtolower(trim((string) $request->query('status', '')));
+    if ($status !== '' && !array_key_exists($status, $statusOrder)) {
+        $status = '';
     }
-    $orders = $orders->values()->all();
+
+    $orders = collect(loadOrders())
+        ->filter(fn ($order) => is_array($order))
+        ->map(function (array $order) use ($normalizeAdminOrderStatus) {
+            $order['status'] = $normalizeAdminOrderStatus($order['status'] ?? 'pending');
+
+            return $order;
+        });
+    $allOrders = $orders;
+
+    if ($status !== '') {
+        $orders = $orders->filter(
+            fn (array $order) => ($order['status'] ?? 'pending') === $status
+        );
+    }
+
+    $orders = $orders
+        ->sort(function (array $left, array $right) use ($statusOrder) {
+            $leftStatus = $left['status'] ?? 'pending';
+            $rightStatus = $right['status'] ?? 'pending';
+
+            $leftRank = $statusOrder[$leftStatus] ?? PHP_INT_MAX;
+            $rightRank = $statusOrder[$rightStatus] ?? PHP_INT_MAX;
+
+            if ($leftRank !== $rightRank) {
+                return $leftRank <=> $rightRank;
+            }
+
+            $leftDueAt = strtotime((string) ($left['due_at'] ?? ''));
+            $rightDueAt = strtotime((string) ($right['due_at'] ?? ''));
+
+            if ($leftDueAt !== false && $rightDueAt !== false && $leftDueAt !== $rightDueAt) {
+                return $leftDueAt <=> $rightDueAt;
+            }
+
+            if ($leftDueAt === false && $rightDueAt !== false) {
+                return 1;
+            }
+
+            if ($leftDueAt !== false && $rightDueAt === false) {
+                return -1;
+            }
+
+            return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+        })
+        ->values()
+        ->all();
     $registeredWriters = collect(loadWriters())
         ->map(function ($writer) {
             $name = trim((string) ($writer['name'] ?? ''));
