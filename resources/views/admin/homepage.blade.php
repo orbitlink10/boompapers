@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="{{ asset('vendor/tinymce/tinymce.min.js') }}"></script>
     <style>
         :root { --accent:#f25c3c; --dark:#1c1c28; --muted:#6b6b7a; --border:#e5e8ed; --bg:#f7f8fb; --card:#ffffff; --green:#0f5951; }
         * { box-sizing: border-box; }
@@ -39,6 +40,43 @@
         .color-row { display:flex; gap:10px; align-items:center; }
         .color-row input[type="color"] { width:56px; padding:4px; height:44px; }
         .footer-actions { display:flex; justify-content:flex-end; }
+        .editor-label {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--dark);
+        }
+        .homepage-editor {
+            min-height: 440px;
+            resize: vertical;
+        }
+        .tox-tinymce {
+            border: 1px solid var(--border) !important;
+            border-radius: 18px !important;
+            overflow: hidden !important;
+            box-shadow: 0 18px 40px rgba(17,42,72,0.05);
+        }
+        .tox .tox-editor-header {
+            box-shadow: none !important;
+            border-bottom: 1px solid var(--border) !important;
+        }
+        .tox .tox-menubar,
+        .tox .tox-toolbar-overlord {
+            background: #fff !important;
+        }
+        .tox .tox-mbtn,
+        .tox .tox-tbtn,
+        .tox .tox-statusbar__path-item,
+        .tox .tox-statusbar__wordcount {
+            font-family: 'Manrope', system-ui, -apple-system, sans-serif !important;
+        }
+        .tox .tox-edit-area__iframe {
+            background: #fff !important;
+        }
+        .tox .tox-statusbar {
+            border-top: 1px solid var(--border) !important;
+        }
         @media (max-width: 1100px) {
             .layout { grid-template-columns:1fr; }
             .topbar, .panel-head, .grid-3, .grid-2 { grid-template-columns:1fr; display:grid; }
@@ -152,11 +190,11 @@
             <section class="panel">
                 <div class="panel-head">
                     <h2>Home Page Content (SEO)</h2>
-                    <div class="panel-note">HTML is supported. Headings, lists, links, and paragraphs render on the homepage.</div>
+                    <div class="panel-note">Page description editor with menus, toolbar actions, code view, media tools, and fullscreen.</div>
                 </div>
                 <div class="field">
-                    <label for="seo_html">SEO Content</label>
-                    <textarea id="seo_html" name="seo_html" style="min-height:320px;">{{ old('seo_html', $homepage['seo_html'] ?? '') }}</textarea>
+                    <label class="editor-label" for="seo_html">Page Description:</label>
+                    <textarea id="seo_html" name="seo_html" class="homepage-editor">{{ old('seo_html', $homepage['seo_html'] ?? '') }}</textarea>
                 </div>
             </section>
 
@@ -166,5 +204,45 @@
         </form>
     </main>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const editorField = document.getElementById('seo_html');
+        const homepageForm = document.getElementById('homepageForm');
+
+        if (!editorField || typeof tinymce === 'undefined') {
+            return;
+        }
+
+        tinymce.init({
+            selector: '#seo_html',
+            license_key: 'gpl',
+            menubar: 'file edit view insert format tools table',
+            plugins: 'advlist lists link image media table code fullscreen autoresize',
+            toolbar: 'undo redo | bold italic | alignleft aligncenter alignright alignjustify | outdent indent | link image media | code fullscreen',
+            toolbar_mode: 'sliding',
+            min_height: 440,
+            autoresize_bottom_margin: 24,
+            branding: false,
+            promotion: false,
+            statusbar: false,
+            elementpath: false,
+            resize: true,
+            browser_spellcheck: true,
+            convert_urls: false,
+            relative_urls: false,
+            block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Blockquote=blockquote',
+            content_style: "body { font-family: Manrope, system-ui, -apple-system, sans-serif; font-size: 18px; line-height: 1.75; padding: 18px; } p { margin: 0 0 18px; } h2, h3, h4 { margin: 0 0 14px; line-height: 1.2; } img, iframe, video { max-width: 100%; height: auto; border-radius: 12px; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #e5e8ed; padding: 10px 12px; } blockquote { border-left: 4px solid #f25c3c; padding-left: 16px; margin-left: 0; color: #5c6476; }",
+            setup: (editor) => {
+                editor.on('change input undo redo', () => {
+                    editor.save();
+                });
+            }
+        });
+
+        homepageForm?.addEventListener('submit', () => {
+            tinymce.triggerSave();
+        });
+    });
+</script>
 </body>
 </html>
