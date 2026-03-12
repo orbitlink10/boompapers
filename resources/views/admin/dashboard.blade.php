@@ -255,40 +255,12 @@
             .page-title { font-size: 24px; }
             .card .count { font-size: 14px; }
         }
+    @include('admin.partials.sidebar-styles')
     </style>
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="mark">AD</div>
-            <span>Admin</span>
-        </div>
-        <div class="badge-label">SMS - 1</div>
-
-        <div class="nav-group">
-            <div class="nav-title">Main</div>
-            <a class="nav-link active" href="{{ route('admin.dashboard') }}"><span>Dashboard</span></a>
-            <a class="nav-link" href="{{ route('order.create') }}"><span>Add Order</span></a>
-            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Orders</span><span class="nav-count">{{ $navCounts['orders'] ?? 0 }}</span></a>
-            <a class="nav-link" href="{{ route('admin.courses') }}"><span>Courses</span><span class="nav-count">{{ $navCounts['courses'] ?? 0 }}</span></a>
-        </div>
-
-        <div class="nav-group">
-            <div class="nav-title">Manage Users</div>
-            <a class="nav-link" href="{{ route('admin.clients') }}"><span>Clients</span><span class="nav-count">{{ $navCounts['clients'] ?? 0 }}</span></a>
-            <a class="nav-link" href="{{ route('admin.writers') }}"><span>Writers</span><span class="nav-count">{{ $navCounts['writers'] ?? 0 }}</span></a>
-            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Financial</span></a>
-        </div>
-
-        <div class="nav-group">
-            <div class="nav-title">Configs</div>
-            <a class="nav-link" href="{{ route('admin.orders') }}"><span>Mass Email</span></a>
-            <a class="nav-link" href="{{ route('admin.settings') }}"><span>Settings</span></a>
-            <a class="nav-link" href="{{ route('admin.homepage') }}"><span>Homepage Content</span></a>
-            <a class="nav-link" href="{{ route('admin.pages') }}"><span>Pages</span></a>
-        </div>
-    </aside>
+    @include('admin.partials.sidebar', ['menuCounts' => $navCounts ?? []])
 
     <main class="content">
         @php

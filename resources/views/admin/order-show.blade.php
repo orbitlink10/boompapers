@@ -50,28 +50,12 @@
         .badge-status.approved{background:#eaf6ff;color:#1f6fb5;}
         .badge-status.cancelled{background:#fde9e9;color:#c53030;}
         @media(max-width:1000px){.layout{grid-template-columns:1fr;} .topline{flex-direction:column;align-items:flex-start;} }
+    @include('admin.partials.sidebar-styles')
     </style>
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand"><span class="icon">★</span><span>Admin</span></div>
-        <div class="nav-group">
-            <div class="nav-title">Main</div>
-            <a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a>
-            <a class="nav-link active" href="{{ route('admin.orders') }}">Orders</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Configs</div>
-            <a class="nav-link" href="{{ route('admin.settings') }}">Settings</a>
-            <a class="nav-link" href="{{ route('admin.homepage') }}">Homepage Content</a>
-            <a class="nav-link" href="{{ route('admin.pages') }}">Pages</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Account</div>
-            <a class="nav-link" href="{{ route('admin.logout') }}">Logout</a>
-        </div>
-    </aside>
+    @include('admin.partials.sidebar', ['menuCounts' => $navCounts ?? []])
 
     <main class="content">
         <div class="topline">

@@ -51,33 +51,12 @@
         .action-stack{display:grid;gap:8px;}
         .delete-form{display:inline-block;}
         @media(max-width:1000px){.layout{grid-template-columns:1fr;} .topbar{flex-direction:column;align-items:flex-start;} }
+    @include('admin.partials.sidebar-styles')
     </style>
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand"><span class="icon">★</span><span>Admin</span></div>
-        <div class="nav-group">
-            <div class="nav-title">Main</div>
-            <a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a>
-            <a class="nav-link active" href="{{ route('admin.orders') }}">Orders</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Manage Users</div>
-            <a class="nav-link" href="{{ route('admin.clients') }}">Clients</a>
-            <a class="nav-link" href="{{ route('admin.writers') }}">Writers</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Configs</div>
-            <a class="nav-link" href="{{ route('admin.settings') }}">Settings</a>
-            <a class="nav-link" href="{{ route('admin.homepage') }}">Homepage Content</a>
-            <a class="nav-link" href="{{ route('admin.pages') }}">Pages</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Account</div>
-            <a class="nav-link" href="{{ route('admin.logout') }}">Logout</a>
-        </div>
-    </aside>
+    @include('admin.partials.sidebar', ['menuCounts' => $navCounts ?? []])
 
     <main class="content">
         <div class="topbar">

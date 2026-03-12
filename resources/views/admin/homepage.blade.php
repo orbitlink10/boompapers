@@ -43,6 +43,7 @@
             .layout { grid-template-columns:1fr; }
             .topbar, .panel-head, .grid-3, .grid-2 { grid-template-columns:1fr; display:grid; }
         }
+    @include('admin.partials.sidebar-styles')
     </style>
 </head>
 <body>
@@ -53,31 +54,7 @@
     $cards = collect($homepage['cards'] ?? [])->pad(4, ['title' => '', 'detail' => ''])->values();
 @endphp
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand"><span class="icon">*</span><span>Admin</span></div>
-        <div class="nav-group">
-            <div class="nav-title">Main</div>
-            <a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a>
-            <a class="nav-link" href="{{ route('order.create') }}">Add Order</a>
-            <a class="nav-link" href="{{ route('admin.orders') }}">Orders</a>
-            <a class="nav-link" href="{{ route('admin.courses') }}">Courses</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Manage Users</div>
-            <a class="nav-link" href="{{ route('admin.clients') }}">Clients</a>
-            <a class="nav-link" href="{{ route('admin.writers') }}">Writers</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Configs</div>
-            <a class="nav-link" href="{{ route('admin.settings') }}">Settings</a>
-            <a class="nav-link active" href="{{ route('admin.homepage') }}">Homepage Content</a>
-            <a class="nav-link" href="{{ route('admin.pages') }}">Pages</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Account</div>
-            <a class="nav-link" href="{{ route('admin.logout') }}">Logout</a>
-        </div>
-    </aside>
+    @include('admin.partials.sidebar', ['menuCounts' => $navCounts ?? []])
 
     <main class="content">
         <div class="topbar">
