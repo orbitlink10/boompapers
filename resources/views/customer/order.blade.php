@@ -62,8 +62,10 @@
         <div class="nav-group">
             <div class="nav-title">Main Menu</div>
             <a class="nav-link" href="{{ route('order.create') }}">New Order</a>
-            <a class="nav-link active" href="{{ route('customer.dashboard') }}">Orders <span class="badge">{{ $orderCount ?? 0 }}</span></a>
-            <a class="nav-link" href="#">Wallet <span class="badge">$0</span></a>
+            <a class="nav-link {{ strtolower(trim((string) ($order['status'] ?? ''))) === 'assigned' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'assigned']) }}">Assigned</a>
+            <a class="nav-link {{ strtolower(trim((string) ($order['status'] ?? ''))) === 'completed' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'completed']) }}">Completed</a>
+            <a class="nav-link {{ strtolower(trim((string) ($order['status'] ?? ''))) === 'revision' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'revision']) }}">Revision</a>
+            <a class="nav-link {{ strtolower(trim((string) ($order['status'] ?? ''))) === 'approved' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'approved']) }}">Approved</a>
         </div>
         <div class="nav-group">
             <div class="nav-title">Listing</div>
