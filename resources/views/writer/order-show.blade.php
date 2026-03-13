@@ -128,8 +128,10 @@
 
         h1 {
             margin: 0;
-            font-size: 34px;
-            letter-spacing: -1px;
+            max-width: 1000px;
+            font-size: clamp(26px, 2.8vw, 32px);
+            line-height: 1.18;
+            letter-spacing: -0.8px;
         }
 
         .hero-meta {
@@ -317,6 +319,10 @@
             .topbar {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            h1 {
+                font-size: 24px;
             }
         }
     </style>
