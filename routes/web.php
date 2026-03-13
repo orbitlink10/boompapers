@@ -98,6 +98,47 @@ if (!function_exists('saveWriterPaymentRequests')) {
     }
 }
 
+if (!function_exists('adminNavigationCounts')) {
+    function adminNavigationCounts(): array
+    {
+        $orders = collect(loadOrders())->filter(fn ($order) => is_array($order));
+        $paymentRequests = collect(loadWriterPaymentRequests())->filter(fn ($request) => is_array($request));
+
+        $distinctSubjects = $orders
+            ->map(fn ($order) => trim((string) ($order['subject'] ?? '')))
+            ->filter()
+            ->map(fn ($subject) => strtolower($subject))
+            ->unique()
+            ->count();
+
+        $distinctClients = $orders
+            ->map(fn ($order) => trim((string) ($order['customer_email'] ?? '')))
+            ->filter()
+            ->map(fn ($email) => strtolower($email))
+            ->unique()
+            ->count();
+
+        $distinctWriters = collect(loadWriters())
+            ->filter(fn ($writer) => is_array($writer))
+            ->map(fn ($writer) => trim((string) ($writer['name'] ?? '')))
+            ->merge(
+                $orders->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
+            )
+            ->filter()
+            ->map(fn ($writer) => strtolower($writer))
+            ->unique()
+            ->count();
+
+        return [
+            'orders' => $orders->count(),
+            'courses' => $distinctSubjects,
+            'clients' => $distinctClients,
+            'writers' => $distinctWriters,
+            'payment_requests' => $paymentRequests->count(),
+        ];
+    }
+}
+
 if (!function_exists('adminNotificationEmail')) {
     function adminNotificationEmail(): string
     {
@@ -2012,34 +2053,9 @@ Route::get('/admin', function () {
     }
     $orders = loadOrders();
 
-    $ordersCollection = collect($orders);
-    $distinctSubjects = $ordersCollection
-        ->map(fn ($order) => trim((string) ($order['subject'] ?? '')))
-        ->filter()
-        ->map(fn ($subject) => strtolower($subject))
-        ->unique()
-        ->count();
-    $distinctClients = $ordersCollection
-        ->map(fn ($order) => trim((string) ($order['customer_email'] ?? '')))
-        ->filter()
-        ->map(fn ($email) => strtolower($email))
-        ->unique()
-        ->count();
-    $distinctWriters = $ordersCollection
-        ->map(fn ($order) => trim((string) ($order['writer_name'] ?? '')))
-        ->filter()
-        ->map(fn ($writer) => strtolower($writer))
-        ->unique()
-        ->count();
-
     return view('admin.dashboard', [
         'orders' => $orders,
-        'navCounts' => [
-            'orders' => $ordersCollection->count(),
-            'courses' => $distinctSubjects,
-            'clients' => $distinctClients,
-            'writers' => $distinctWriters,
-        ],
+        'navCounts' => adminNavigationCounts(),
     ]);
 })->name('admin.dashboard');
 
@@ -2171,6 +2187,7 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
         'orders' => $orders,
         'status' => $status,
         'writers' => $writers,
+        'navCounts' => adminNavigationCounts(),
     ]);
 })->name('admin.orders');
 
@@ -2324,8 +2341,63 @@ Route::get('/admin/orders/{id}', function ($id) {
         'orderFiles' => $orderFiles,
         'writerFiles' => $writerFiles,
         'writers' => $writers,
+        'navCounts' => adminNavigationCounts(),
     ]);
 })->name('admin.order.show');
+
+Route::get('/admin/payments', function () {
+    if (!session('admin_logged_in')) {
+        return redirect()->route('admin.login');
+    }
+
+    $ordersById = collect(loadOrders())
+        ->filter(fn ($order) => is_array($order))
+        ->keyBy(fn ($order) => (int) ($order['id'] ?? 0));
+
+    $paymentRequests = collect(loadWriterPaymentRequests())
+        ->filter(fn ($request) => is_array($request))
+        ->sortByDesc(fn ($request) => strtotime((string) ($request['requested_at'] ?? '')) ?: 0)
+        ->map(function (array $request) use ($ordersById) {
+            $orderId = (int) ($request['order_id'] ?? 0);
+            $order = $ordersById->get($orderId);
+            $requestedAtTimestamp = strtotime((string) ($request['requested_at'] ?? ''));
+            $requestStatus = strtolower(trim((string) ($request['status'] ?? 'requested'))) ?: 'requested';
+
+            return [
+                'id' => trim((string) ($request['id'] ?? '')),
+                'order_id' => $orderId,
+                'order_title' => trim((string) ($request['order_title'] ?? ($order['title'] ?? 'Untitled'))),
+                'writer_name' => trim((string) ($request['writer_name'] ?? ($order['writer_name'] ?? 'Writer'))),
+                'writer_email' => trim((string) ($request['writer_email'] ?? ($order['writer_email'] ?? ''))),
+                'pages' => max(1, (int) ($request['pages'] ?? ($order['pages'] ?? 1))),
+                'amount' => is_array($order)
+                    ? writerPayoutForOrder($order)
+                    : (int) ($request['amount'] ?? 0),
+                'status' => $requestStatus,
+                'order_status' => is_array($order)
+                    ? strtolower(trim((string) ($order['status'] ?? 'pending')))
+                    : 'unknown',
+                'requested_at' => $requestedAtTimestamp
+                    ? date('d M Y, h:i A', $requestedAtTimestamp)
+                    : 'N/A',
+            ];
+        })
+        ->values();
+
+    $activeWriters = $paymentRequests
+        ->map(fn ($request) => strtolower(trim((string) ($request['writer_email'] ?: $request['writer_name']))))
+        ->filter()
+        ->unique()
+        ->count();
+
+    return view('admin.payments', [
+        'paymentRequests' => $paymentRequests->all(),
+        'requestedTotal' => $paymentRequests->sum('amount'),
+        'requestedOrders' => $paymentRequests->pluck('order_id')->filter()->unique()->count(),
+        'requestingWriters' => $activeWriters,
+        'navCounts' => adminNavigationCounts(),
+    ]);
+})->name('admin.payments');
 
 Route::get('/admin/courses', function () {
     if (!session('admin_logged_in')) {
@@ -2359,7 +2431,10 @@ Route::get('/admin/courses', function () {
         })
         ->all();
 
-    return view('admin.courses', ['courses' => $courses]);
+    return view('admin.courses', [
+        'courses' => $courses,
+        'navCounts' => adminNavigationCounts(),
+    ]);
 })->name('admin.courses');
 
 Route::get('/admin/clients', function () {
@@ -2383,7 +2458,10 @@ Route::get('/admin/clients', function () {
         ->values()
         ->all();
 
-    return view('admin.clients', ['clients' => $clients]);
+    return view('admin.clients', [
+        'clients' => $clients,
+        'navCounts' => adminNavigationCounts(),
+    ]);
 })->name('admin.clients');
 
 Route::get('/admin/writers', function () {
@@ -2446,7 +2524,10 @@ Route::get('/admin/writers', function () {
         ];
     })->all();
 
-    return view('admin.writers', ['writers' => $writers]);
+    return view('admin.writers', [
+        'writers' => $writers,
+        'navCounts' => adminNavigationCounts(),
+    ]);
 })->name('admin.writers');
 
 Route::get('/admin/settings', function () {
@@ -2458,6 +2539,7 @@ Route::get('/admin/settings', function () {
         'levels' => pricingLevels(),
         'deadlines' => pricingDeadlines(),
         'pricing' => loadPricing(),
+        'navCounts' => adminNavigationCounts(),
     ]);
 })->name('admin.settings');
 
@@ -2498,6 +2580,7 @@ Route::get('/admin/homepage', function () {
 
     return view('admin.homepage', [
         'homepageContent' => loadHomepageContent(),
+        'navCounts' => adminNavigationCounts(),
     ]);
 })->name('admin.homepage');
 
@@ -2600,6 +2683,7 @@ Route::get('/admin/pages', function (\Illuminate\Http\Request $request) {
     return view('admin.pages', [
         'pages' => $pages,
         'editingPage' => is_array($editingPage) ? $editingPage : null,
+        'navCounts' => adminNavigationCounts(),
     ]);
 })->name('admin.pages');
 

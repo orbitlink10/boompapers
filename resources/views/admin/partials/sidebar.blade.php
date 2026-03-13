@@ -34,6 +34,7 @@
                     'patterns' => ['admin.orders'],
                     'active_query' => ['status' => 'approved'],
                 ],
+                ['label' => 'Payment Requested', 'route' => 'admin.payments', 'patterns' => ['admin.payments'], 'count_key' => 'payment_requests'],
                 ['label' => 'Courses', 'route' => 'admin.courses', 'patterns' => ['admin.courses'], 'count_key' => 'courses'],
             ],
         ],
