@@ -241,7 +241,7 @@
 
                 <div>
                     <label>Upload Files (Optional)</label>
-                    <input type="file" name="files[]" multiple>
+                    @include('partials.multi-file-upload')
                     <div class="helper">Attach rubrics, references, or any supporting documents (up to 5MB each).</div>
                 </div>
 

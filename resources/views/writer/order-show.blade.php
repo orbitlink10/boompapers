@@ -412,7 +412,7 @@
                     @elseif($isAssignedToCurrent)
                         <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
                             @csrf
-                            <input type="file" name="files[]" multiple>
+                            @include('partials.multi-file-upload', ['required' => true])
                             <button class="btn" type="submit">Upload Files</button>
                         </form>
                     @else

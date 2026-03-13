@@ -163,7 +163,9 @@
                             const hidden = form ? form.querySelector('input[name="writer_name"]') : null;
                             sel?.addEventListener('change', () => {
                                 const selected = sel.options[sel.selectedIndex];
-                                hidden.value = selected ? selected.textContent : '';
+                                if (hidden) {
+                                    hidden.value = selected ? selected.textContent : '';
+                                }
                             });
                         })();
                     </script>

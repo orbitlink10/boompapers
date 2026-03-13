@@ -13,10 +13,15 @@
             --panel: #ffffff;
             --panel-soft: #f7f7f7;
             --line: #dfdfdf;
+            --border: #e5e8ed;
+            --dark: #1c1c28;
             --text: #2d2d2d;
             --muted: #727272;
             --accent: #5f70cb;
             --accent-soft: #eef1ff;
+            --sidebar-accent: #f25c3c;
+            --sidebar-accent-secondary: #ff8a65;
+            --sidebar-soft: #fff2ec;
             --success: #0f9d69;
             --danger: #c53030;
             --warning: #c27a00;
@@ -36,7 +41,7 @@
         .app-shell {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 320px minmax(0, 1fr);
+            grid-template-columns: 280px minmax(0, 1fr);
         }
 
         .sidebar {
@@ -503,6 +508,11 @@
                 font-size: 17px;
             }
         }
+    @include('admin.partials.sidebar-styles')
+
+        .nav-count {
+            color: var(--danger);
+        }
     </style>
 </head>
 <body>
@@ -520,93 +530,58 @@
     @endphp
     <div class="app-shell">
         <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-mark">BP</div>
-                <div class="brand-copy">
-                    <div class="brand-title">boompapers</div>
-                    <div class="brand-subtitle">Writer Workspace</div>
+            <div class="sidebar-brand">
+                <span class="icon">WR</span>
+                <div class="label">
+                    <span class="eyebrow">Control Panel</span>
+                    <span class="title">Writer</span>
                 </div>
             </div>
 
-            <div class="nav-card">
-                <div class="nav-section">
-                    <div class="nav-label">Workspace</div>
-                    <a class="nav-link {{ ($menu ?? 'available') === 'available' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'available']) }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 11.5 12 4l9 7.5"></path>
-                            <path d="M5 10.5V20h14v-9.5"></path>
-                        </svg>
-                        <span>Available</span>
-                        <span class="nav-count">{{ $availableCount }}</span>
-                    </a>
-                    <a class="nav-link {{ ($menu ?? '') === 'assigned' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'assigned']) }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                            <path d="M8 12h8"></path>
-                            <path d="M8 8h8"></path>
-                            <path d="M8 16h5"></path>
-                        </svg>
-                        <span>Assigned</span>
-                        <span class="nav-count">{{ $assignedCount }}</span>
-                    </a>
-                    <a class="nav-link {{ ($menu ?? '') === 'revision' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'revision']) }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"></path>
-                            <path d="M21 3v5h-5"></path>
-                            <path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"></path>
-                            <path d="M8 16H3v5"></path>
-                        </svg>
-                        <span>Revision</span>
-                        <span class="nav-count">{{ $revisionCount }}</span>
-                    </a>
-                    <a class="nav-link {{ ($menu ?? '') === 'completed' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'completed']) }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="m5 12 4.2 4.2L19 6.5"></path>
-                        </svg>
-                        <span>Completed</span>
-                        <span class="nav-count">{{ $completedCount }}</span>
-                    </a>
-                    <a class="nav-link {{ ($menu ?? '') === 'approved' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'approved']) }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M9 12l2 2 4-4"></path>
-                            <path d="M12 3l7 4v5c0 5-3.4 8.4-7 9-3.6-.6-7-4-7-9V7l7-4Z"></path>
-                        </svg>
-                        <span>Approved</span>
-                        <span class="nav-count">{{ $approvedCount }}</span>
-                    </a>
-                </div>
+            <div class="sidebar-nav">
+                <section class="nav-group">
+                    <div class="nav-title">Main</div>
+                    <div class="nav-links">
+                        <a class="nav-link {{ ($menu ?? 'available') === 'available' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'available']) }}">
+                            <span>Dashboard</span>
+                            <span class="nav-count">{{ $availableCount }}</span>
+                        </a>
+                        <a class="nav-link {{ ($menu ?? '') === 'assigned' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'assigned']) }}">
+                            <span>Assigned</span>
+                            <span class="nav-count">{{ $assignedCount }}</span>
+                        </a>
+                        <a class="nav-link {{ ($menu ?? '') === 'completed' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'completed']) }}">
+                            <span>Completed</span>
+                            <span class="nav-count">{{ $completedCount }}</span>
+                        </a>
+                        <a class="nav-link {{ ($menu ?? '') === 'revision' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'revision']) }}">
+                            <span>Revision</span>
+                            <span class="nav-count">{{ $revisionCount }}</span>
+                        </a>
+                        <a class="nav-link {{ ($menu ?? '') === 'approved' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'approved']) }}">
+                            <span>Approved</span>
+                            <span class="nav-count">{{ $approvedCount }}</span>
+                        </a>
+                    </div>
+                </section>
 
-                <div class="nav-section">
-                    <div class="nav-label">Profile</div>
-                    <a class="nav-link" href="{{ route('writer.profile') }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="8" r="4"></circle>
-                            <path d="M4 20a8 8 0 0 1 16 0"></path>
-                        </svg>
-                        <span>My Profile</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-label">Links</div>
-                    <a class="nav-link" href="{{ route('writers.index') }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9.5" cy="7" r="4"></circle>
-                            <path d="M20 8v6"></path>
-                            <path d="M23 11h-6"></path>
-                        </svg>
-                        <span>Public Writers</span>
-                    </a>
-                    <a class="nav-link" href="{{ route('writer.logout') }}">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <path d="M16 17l5-5-5-5"></path>
-                            <path d="M21 12H9"></path>
-                        </svg>
-                        <span>Logout</span>
-                    </a>
-                </div>
+                <section class="nav-group">
+                    <div class="nav-title">Account</div>
+                    <div class="nav-links">
+                        <a class="nav-link" href="{{ route('writer.profile') }}">
+                            <span>Profile</span>
+                        </a>
+                        <a class="nav-link" href="{{ route('writer.payments') }}">
+                            <span>Payment</span>
+                        </a>
+                        <a class="nav-link" href="{{ route('writers.index') }}">
+                            <span>Writers</span>
+                        </a>
+                        <a class="nav-link" href="{{ route('writer.logout') }}">
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </section>
             </div>
         </aside>
 
@@ -702,7 +677,7 @@
                                                 </form>
                                                 <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
                                                     @csrf
-                                                    <input type="file" name="files[]" multiple>
+                                                    @include('partials.multi-file-upload', ['required' => true])
                                                     <button class="btn btn-light" type="submit">Upload Files</button>
                                                 </form>
                                                 @if(($order['files_count'] ?? 0) > 0)

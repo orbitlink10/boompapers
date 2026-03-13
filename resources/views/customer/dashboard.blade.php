@@ -13,8 +13,12 @@
             --accent: #f8b23d;
             --muted: #6c737a;
             --border: #e5e8ed;
+            --dark: #1c1c28;
             --bg: #f7f8fb;
             --card: #ffffff;
+            --sidebar-accent: #f25c3c;
+            --sidebar-accent-secondary: #ff8a65;
+            --sidebar-soft: #fff2ec;
         }
         * { box-sizing: border-box; }
         body {
@@ -25,7 +29,7 @@
         }
         .layout {
             display: grid;
-            grid-template-columns: 240px 1fr;
+            grid-template-columns: 280px 1fr;
             min-height: 100vh;
         }
         .sidebar {
@@ -217,29 +221,85 @@
             .layout { grid-template-columns: 1fr; }
             .sidebar { gap:14px; padding:18px; }
         }
-    </style>
+    @include('admin.partials.sidebar-styles')
+
+        .nav-count {
+            color: #c53030;
+        }
+</style>
 </head>
 <body>
+@php
+    $orders = $orders ?? [];
+    $statusCards = $statusCards ?? [];
+    $statusFilter = $statusFilter ?? 'all';
+    $selectedStatusLabel = $selectedStatusLabel ?? null;
+    $orderCount = $orderCount ?? count($orders);
+    $assignedCount = collect($statusCards)->firstWhere('key', 'assigned')['count'] ?? 0;
+    $completedCount = collect($statusCards)->firstWhere('key', 'completed')['count'] ?? 0;
+    $revisionCount = collect($statusCards)->firstWhere('key', 'revision')['count'] ?? 0;
+    $approvedCount = collect($statusCards)->firstWhere('key', 'approved')['count'] ?? 0;
+@endphp
 <div class="layout">
     <aside class="sidebar">
-        <div class="brand"><span class="icon">◎</span><span>MyAccount</span></div>
-        <div class="nav-group">
-            <div class="nav-title">Main Menu</div>
-            <a class="nav-link" href="{{ route('order.create') }}">New Order</a>
-            <a class="nav-link {{ ($statusFilter ?? 'all') === 'assigned' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'assigned']) }}">Assigned</a>
-            <a class="nav-link {{ ($statusFilter ?? 'all') === 'completed' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'completed']) }}">Completed</a>
-            <a class="nav-link {{ ($statusFilter ?? 'all') === 'revision' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'revision']) }}">Revision</a>
-            <a class="nav-link {{ ($statusFilter ?? 'all') === 'approved' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'approved']) }}">Approved</a>
+        <div class="sidebar-brand">
+            <span class="icon">CU</span>
+            <div class="label">
+                <span class="eyebrow">Control Panel</span>
+                <span class="title">Customer</span>
+            </div>
         </div>
-        <div class="nav-group">
-            <div class="nav-title">Listing</div>
-            <a class="nav-link" href="#">Courses</a>
-            <a class="nav-link" href="#">Top Writers</a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Account</div>
-            <a class="nav-link" href="#">Profile</a>
-            <a class="nav-link" href="{{ route('customer.logout') }}">Logout</a>
+        <div class="sidebar-nav">
+            <section class="nav-group">
+                <div class="nav-title">Main</div>
+                <div class="nav-links">
+                    <a class="nav-link {{ $statusFilter === 'all' ? 'active' : '' }}" href="{{ route('customer.dashboard') }}">
+                        <span>Dashboard</span>
+                        <span class="nav-count">{{ $orderCount }}</span>
+                    </a>
+                    <a class="nav-link" href="{{ route('order.create') }}">
+                        <span>Add Order</span>
+                    </a>
+                    <a class="nav-link {{ $statusFilter === 'assigned' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'assigned']) }}">
+                        <span>Assigned</span>
+                        <span class="nav-count">{{ $assignedCount }}</span>
+                    </a>
+                    <a class="nav-link {{ $statusFilter === 'completed' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'completed']) }}">
+                        <span>Completed</span>
+                        <span class="nav-count">{{ $completedCount }}</span>
+                    </a>
+                    <a class="nav-link {{ $statusFilter === 'revision' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'revision']) }}">
+                        <span>Revision</span>
+                        <span class="nav-count">{{ $revisionCount }}</span>
+                    </a>
+                    <a class="nav-link {{ $statusFilter === 'approved' ? 'active' : '' }}" href="{{ route('customer.dashboard', ['status' => 'approved']) }}">
+                        <span>Approved</span>
+                        <span class="nav-count">{{ $approvedCount }}</span>
+                    </a>
+                </div>
+            </section>
+            <section class="nav-group">
+                <div class="nav-title">Listing</div>
+                <div class="nav-links">
+                    <a class="nav-link" href="#">
+                        <span>Courses</span>
+                    </a>
+                    <a class="nav-link" href="#">
+                        <span>Top Writers</span>
+                    </a>
+                </div>
+            </section>
+            <section class="nav-group">
+                <div class="nav-title">Account</div>
+                <div class="nav-links">
+                    <a class="nav-link" href="#">
+                        <span>Profile</span>
+                    </a>
+                    <a class="nav-link" href="{{ route('customer.logout') }}">
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </section>
         </div>
     </aside>
 
@@ -264,13 +324,6 @@
                 <button>Search</button>
             </div>
         @endif
-
-        @php
-            $orders = $orders ?? [];
-            $statusCards = $statusCards ?? [];
-            $statusFilter = $statusFilter ?? 'all';
-            $selectedStatusLabel = $selectedStatusLabel ?? null;
-        @endphp
         @if($statusFilter === 'all')
             <div class="chips">
                 @foreach($statusCards as $card)

@@ -174,7 +174,7 @@
             <form class="upload" action="{{ route('customer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <label>Upload any additional files here</label>
-                <input type="file" name="files[]" multiple>
+                @include('partials.multi-file-upload')
                 <button type="submit" class="btn btn-secondary">Submit files</button>
                 @if(session('uploaded'))
                     <div style="color:var(--green); font-weight:800;">{{ session('uploaded') }}</div>

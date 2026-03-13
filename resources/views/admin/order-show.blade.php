@@ -77,11 +77,10 @@
                 @csrf
                 <select name="writer_id" required>
                     <option value="">Select writer</option>
-                    <option value="1" {{ ($order['writer_id'] ?? null) == 1 ? 'selected' : '' }}>Alice Writer</option>
-                    <option value="2" {{ ($order['writer_id'] ?? null) == 2 ? 'selected' : '' }}>Brian Smith</option>
-                    <option value="3" {{ ($order['writer_id'] ?? null) == 3 ? 'selected' : '' }}>Carol Johnson</option>
+                    @foreach(($writers ?? []) as $writer)
+                        <option value="{{ $writer['id'] }}" {{ ($order['writer_id'] ?? null) == $writer['id'] ? 'selected' : '' }}>{{ $writer['name'] }}</option>
+                    @endforeach
                 </select>
-                <input type="hidden" name="writer_name" id="writer_name" value="{{ $order['writer_name'] ?? '' }}">
                 <select name="status">
                     @php $sts=['pending','available','assigned','inprogress','editing','revision','completed','approved','cancelled']; @endphp
                     @foreach($sts as $st)
@@ -147,7 +146,7 @@
             <form class="upload" action="{{ route('customer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <label>Upload files (on behalf of client)</label>
-                <input type="file" name="files[]" multiple>
+                @include('partials.multi-file-upload')
                 <button type="submit" class="btn btn-primary">Upload</button>
                 @if(session('uploaded'))
                     <div style="color:var(--green); font-weight:800;">{{ session('uploaded') }}</div>
@@ -158,13 +157,6 @@
 </div>
 <script>
     (() => {
-        const writerSel = document.querySelector('select[name="writer_id"]');
-        const hidden = document.getElementById('writer_name');
-        writerSel?.addEventListener('change', () => {
-            const option = writerSel.options[writerSel.selectedIndex];
-            hidden.value = option ? option.textContent : '';
-        });
-
         const statusSel = document.querySelector('select[name="status"]');
         const badge = document.getElementById('statusBadge');
         const syncStatus = () => {
