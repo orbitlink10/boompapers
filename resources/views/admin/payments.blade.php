@@ -313,9 +313,9 @@
                                     <div class="request-order">
                                         <strong>{{ $payment['payment_id'] ?: 'PAY-0000' }}</strong>
                                         @if(($payment['order_id'] ?? 0) > 0)
-                                            <a class="request-meta-link" href="{{ route('admin.order.show', ['id' => $payment['order_id']]) }}">Order #{{ $payment['order_id'] }} {{ $payment['order_title'] }}</a>
+                                            <a class="request-meta-link" href="{{ route('admin.order.show', ['id' => $payment['order_id']]) }}">Order #{{ $payment['order_id'] }}</a>
                                         @else
-                                            <span class="request-meta">{{ $payment['order_title'] }}</span>
+                                            <span class="request-meta">Order unavailable</span>
                                         @endif
                                     </div>
                                 </td>
