@@ -6,7 +6,34 @@
             'items' => [
                 ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'patterns' => ['admin.dashboard']],
                 ['label' => 'Add Order', 'route' => 'order.create', 'patterns' => ['order.create']],
-                ['label' => 'Orders', 'route' => 'admin.orders', 'patterns' => ['admin.orders', 'admin.order.show'], 'count_key' => 'orders'],
+                [
+                    'label' => 'Assigned',
+                    'route' => 'admin.orders',
+                    'route_params' => ['status' => 'assigned'],
+                    'patterns' => ['admin.orders'],
+                    'active_query' => ['status' => 'assigned'],
+                ],
+                [
+                    'label' => 'Completed',
+                    'route' => 'admin.orders',
+                    'route_params' => ['status' => 'completed'],
+                    'patterns' => ['admin.orders'],
+                    'active_query' => ['status' => 'completed'],
+                ],
+                [
+                    'label' => 'Revision',
+                    'route' => 'admin.orders',
+                    'route_params' => ['status' => 'revision'],
+                    'patterns' => ['admin.orders'],
+                    'active_query' => ['status' => 'revision'],
+                ],
+                [
+                    'label' => 'Approved',
+                    'route' => 'admin.orders',
+                    'route_params' => ['status' => 'approved'],
+                    'patterns' => ['admin.orders'],
+                    'active_query' => ['status' => 'approved'],
+                ],
                 ['label' => 'Courses', 'route' => 'admin.courses', 'patterns' => ['admin.courses'], 'count_key' => 'courses'],
             ],
         ],
@@ -50,6 +77,8 @@
                     @foreach($section['items'] as $item)
                         @php
                             $patterns = $item['patterns'] ?? [$item['route']];
+                            $routeParameters = $item['route_params'] ?? [];
+                            $activeQuery = is_array($item['active_query'] ?? null) ? $item['active_query'] : [];
                             $isActive = false;
                             foreach ($patterns as $pattern) {
                                 if (request()->routeIs($pattern)) {
@@ -58,12 +87,21 @@
                                 }
                             }
 
+                            if ($isActive && $activeQuery !== []) {
+                                foreach ($activeQuery as $queryKey => $expectedValue) {
+                                    if ((string) request()->query($queryKey, '') !== (string) $expectedValue) {
+                                        $isActive = false;
+                                        break;
+                                    }
+                                }
+                            }
+
                             $countKey = $item['count_key'] ?? null;
                             $count = $countKey !== null && array_key_exists($countKey, $menuCounts)
                                 ? (int) $menuCounts[$countKey]
                                 : null;
                         @endphp
-                        <a class="nav-link {{ $isActive ? 'active' : '' }}" href="{{ route($item['route']) }}" @if($isActive) aria-current="page" @endif>
+                        <a class="nav-link {{ $isActive ? 'active' : '' }}" href="{{ route($item['route'], $routeParameters) }}" @if($isActive) aria-current="page" @endif>
                             <span>{{ $item['label'] }}</span>
                             @if($count !== null)
                                 <span class="nav-count">{{ $count }}</span>

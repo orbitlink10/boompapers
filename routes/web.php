@@ -203,6 +203,29 @@ if (!function_exists('deadlineSecondsFor')) {
     }
 }
 
+if (!function_exists('writerRatePerPage')) {
+    function writerRatePerPage(): int
+    {
+        return 500;
+    }
+}
+
+if (!function_exists('writerPayoutForPages')) {
+    function writerPayoutForPages($pages): int
+    {
+        $pageCount = max(1, (int) $pages);
+
+        return $pageCount * writerRatePerPage();
+    }
+}
+
+if (!function_exists('writerPayoutForOrder')) {
+    function writerPayoutForOrder(array $order): int
+    {
+        return writerPayoutForPages($order['pages'] ?? 1);
+    }
+}
+
 if (!function_exists('writerDueAtForOrder')) {
     function writerDueAtForOrder(array $order): ?string
     {
@@ -253,6 +276,12 @@ if (!function_exists('normalizeOrderDeadlines')) {
                     $item['due_at'] = date(DATE_ATOM, $createdAtTs + $seconds);
                     $changed = true;
                 }
+            }
+
+            $writerPayout = writerPayoutForOrder($item);
+            if ((int) ($item['writer_payout'] ?? 0) !== $writerPayout) {
+                $item['writer_payout'] = $writerPayout;
+                $changed = true;
             }
 
             $normalized[] = $item;
@@ -910,6 +939,7 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
                 'subject' => $order['subject'] ?? 'Other',
                 'type' => $order['type'] ?? 'Essay',
                 'pages' => (int) ($order['pages'] ?? 1),
+                'writer_payout' => writerPayoutForOrder($order),
                 'status' => $canViewOrderStatus ? $status : 'private',
                 'client_name' => $order['customer_name'] ?? 'Client',
                 'client_email' => $order['customer_email'] ?? 'client@example.com',
@@ -984,14 +1014,7 @@ Route::get('/writer/orders/{id}', function ($id) {
     $orderFiles = orderFilesFor((int) $id, 'customer');
     $writerFiles = orderFilesFor((int) $id, 'writer');
 
-    $statusOptions = [
-        'assigned' => 'Assigned',
-        'inprogress' => 'In Progress',
-        'editing' => 'Editing',
-        'revision' => 'Revision',
-        'completed' => 'Completed',
-        'approved' => 'Approved',
-    ];
+    $order['writer_payout'] = writerPayoutForOrder($order);
 
     return view('writer.order-show', [
         'order' => $order,
@@ -999,7 +1022,6 @@ Route::get('/writer/orders/{id}', function ($id) {
         'writerFiles' => $writerFiles,
         'canTake' => $isAvailable,
         'isAssignedToCurrent' => $isMine,
-        'statusOptions' => $statusOptions,
     ]);
 })->name('writer.order.show');
 
@@ -1141,27 +1163,62 @@ Route::post('/writer/orders/{id}/files', function (\Illuminate\Http\Request $req
     }
 
     $orders = loadOrders();
-    $order = collect($orders)->firstWhere('id', (int) $id);
-    if (!$order || !is_array($order)) {
-        return redirect()->route('writer.dashboard')->with('error', 'Order not found.');
-    }
-
     $writerId = (int) (session('writer_id') ?? 0);
     $writerName = trim((string) (session('writer_name') ?? ''));
-    $assignedId = (int) ($order['writer_id'] ?? 0);
-    $assignedName = trim((string) ($order['writer_name'] ?? ''));
-
-    if (!($assignedId === $writerId || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0))) {
-        return back()->with('error', 'You can only upload files to orders assigned to you.');
-    }
 
     $request->validate([
-        'files' => 'nullable|array',
+        'files' => 'required|array|min:1',
         'files.*' => 'file|max:5120',
     ]);
 
+    $targetId = (int) $id;
+    $found = false;
+    $updatedMenu = 'completed';
+    $uploadMessage = 'Files uploaded successfully.';
+
+    foreach ($orders as &$order) {
+        if (!is_array($order) || (int) ($order['id'] ?? 0) !== $targetId) {
+            continue;
+        }
+
+        $found = true;
+        $assignedId = (int) ($order['writer_id'] ?? 0);
+        $assignedName = trim((string) ($order['writer_name'] ?? ''));
+
+        if (!($assignedId === $writerId || ($writerName !== '' && $assignedName !== '' && strcasecmp($assignedName, $writerName) === 0))) {
+            return back()->with('error', 'You can only upload files to orders assigned to you.');
+        }
+
+        $status = strtolower(trim((string) ($order['status'] ?? 'pending')));
+        if (in_array($status, ['assigned', 'inprogress', 'editing', 'revision'], true)) {
+            $displayWriter = $assignedName !== '' ? $assignedName : ($writerName !== '' ? $writerName : 'Your writer');
+            $noticeTime = now()->toIso8601String();
+            $order['status'] = 'completed';
+            $order['writer_last_update_at'] = $noticeTime;
+            $order['client_notice'] = $displayWriter . ' uploaded files and marked your order as completed.';
+            $order['client_notice_at'] = $noticeTime;
+            $updatedMenu = 'completed';
+            $uploadMessage = 'Files uploaded successfully. Order moved to completed.';
+        } elseif ($status === 'approved') {
+            $updatedMenu = 'approved';
+        } elseif ($status === 'completed') {
+            $updatedMenu = 'completed';
+        } else {
+            $updatedMenu = 'assigned';
+        }
+
+        break;
+    }
+
+    if (!$found) {
+        return redirect()->route('writer.dashboard')->with('error', 'Order not found.');
+    }
+
     storeOrderFiles($request->file('files', []), (int) $id, 'writer');
-    return back()->with('uploaded', 'Files uploaded successfully.');
+    saveOrders($orders);
+
+    return redirect()->route('writer.dashboard', ['menu' => $updatedMenu])
+        ->with('uploaded', $uploadMessage);
 })->name('writer.order.files');
 
 Route::get('/customer/dashboard', function (\Illuminate\Http\Request $request) {
@@ -1289,6 +1346,7 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'draft_outline' => $draftOutline,
         'created_at' => $createdAt->toIso8601String(),
         'due_at' => $dueAt,
+        'writer_payout' => writerPayoutForPages($pages),
         'customer_email' => session('customer_email', 'customer'),
         'customer_name' => session('customer_name', 'Customer'),
     ];
@@ -1501,6 +1559,7 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
         ->filter(fn ($order) => is_array($order))
         ->map(function (array $order) use ($normalizeAdminOrderStatus) {
             $order['status'] = $normalizeAdminOrderStatus($order['status'] ?? 'pending');
+            $order['writer_payout'] = writerPayoutForOrder($order);
 
             return $order;
         });
@@ -1670,6 +1729,7 @@ Route::get('/admin/orders/{id}', function ($id) {
     if (!$order) {
         return redirect()->route('admin.orders');
     }
+    $order['writer_payout'] = writerPayoutForOrder($order);
     $orderFiles = orderFilesFor((int) $id, 'customer');
     $writerFiles = orderFilesFor((int) $id, 'writer');
     return view('admin.order-show', [

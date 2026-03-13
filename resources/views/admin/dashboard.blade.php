@@ -240,6 +240,7 @@
         .status.revision { background: #fff0f2; color: #d62d50; }
         .status.approved { background: #ecf8f3; color: #157f56; }
         .status.cancelled { background: #fff0f0; color: #cc3a3a; }
+        .writer-pay { font-weight: 800; color: #0f5951; white-space: nowrap; }
         .avatar {
             width: 34px; height: 34px; border-radius: 50%;
             background: #edf3ff;
@@ -311,6 +312,7 @@
                     <th>Writer</th>
                     <th>Topic</th>
                     <th>Due</th>
+                    <th>Writer Pay</th>
                     <th>Status</th>
                 </tr>
                 </thead>
@@ -322,10 +324,11 @@
                         <td>{{ $order['writer_name'] ?? 'Unassigned' }}</td>
                         <td>{{ $order['title'] ?? 'Untitled' }}</td>
                         <td>{{ $order['deadline'] ?? '48 Hours' }}</td>
+                        <td><span class="writer-pay">Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span></td>
                         <td><span class="status {{ $order['status'] ?? 'pending' }}">{{ ucfirst($order['status'] ?? 'pending') }}</span></td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" style="text-align:center; padding:16px; color:#6b6b7a;">No orders yet</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding:16px; color:#6b6b7a;">No orders yet</td></tr>
                 @endforelse
                 </tbody>
             </table>

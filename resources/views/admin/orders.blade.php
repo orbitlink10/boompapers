@@ -42,6 +42,7 @@
         .deadline-live{font-weight:800;color:#2f3236;white-space:nowrap;}
         .deadline-live.deadline-urgent{color:#c27a00;}
         .deadline-live.deadline-expired{color:#c53030;}
+        .writer-pay{font-weight:900;color:#0f5951;white-space:nowrap;}
         .assign-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
         select,button{font-family:inherit;font-weight:800;}
         select{padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
@@ -95,6 +96,7 @@
                     <th>Client</th>
                     <th>Writer</th>
                     <th>Deadline</th>
+                    <th>Writer Pay</th>
                     <th>Status</th>
                     <th>Assign</th>
                 </tr>
@@ -119,6 +121,7 @@
                                 {{ $fallbackDeadline }}
                             </span>
                         </td>
+                        <td><span class="writer-pay">Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span></td>
                         <td><span class="status {{ $order['status'] ?? 'pending' }} status-pill" data-order="{{ $order['id'] }}">{{ ucfirst($order['status'] ?? 'pending') }}</span></td>
                         <td>
                             <div class="action-stack">
@@ -165,7 +168,7 @@
                         })();
                     </script>
                 @empty
-                    <tr><td colspan="7" style="text-align:center; padding:16px; color:var(--muted); font-weight:800;">No orders yet</td></tr>
+                    <tr><td colspan="8" style="text-align:center; padding:16px; color:var(--muted); font-weight:800;">No orders yet</td></tr>
 @endforelse
                 </tbody>
             </table>

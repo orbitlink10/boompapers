@@ -70,6 +70,7 @@
                     <span>{{ $order['pages'] ?? 1 }} Page(s) 275 Words, {{ $order['slides'] ?? 0 }} PPTs</span>
                     <span>Due: {{ $order['deadline'] ?? '48 Hours' }}</span>
                     <span>USD {{ number_format($order['cost'] ?? 0,2) }}</span>
+                    <span>Writer pay: Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span>
                 </div>
             </div>
             <form class="assign-form" action="{{ route('admin.orders.assign', ['id'=>$order['id']]) }}" method="POST" style="align-self:flex-start;">
@@ -94,6 +95,7 @@
         <div class="info-grid">
             <div class="row"><span class="label">Client</span><span class="value">{{ $order['customer_email'] ?? 'customer' }}</span></div>
             <div class="row"><span class="label">Writer</span><span class="value">{{ $order['writer_name'] ?? 'Unassigned' }}</span></div>
+            <div class="row"><span class="label">Writer Pay</span><span class="value">Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span></div>
             <div class="row">
                 <span class="label">Order Status</span>
                 <span class="value">

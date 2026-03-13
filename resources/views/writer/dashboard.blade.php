@@ -153,10 +153,16 @@
             display: grid;
             place-items: center;
             padding: 0 8px;
-            background: var(--accent);
-            color: #fff;
+            background: #fdeaea;
+            border: 1px solid #f1b8b8;
+            color: var(--danger);
             font-size: 12px;
             font-weight: 800;
+        }
+
+        .nav-link.active .nav-count,
+        .nav-link:hover .nav-count {
+            color: var(--danger);
         }
 
         .content {
@@ -221,42 +227,6 @@
             color: #b42318;
         }
 
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-        }
-
-        .summary-card {
-            background: var(--panel);
-            border: 1px solid #e5e5e5;
-            border-radius: 18px;
-            padding: 18px;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.04);
-        }
-
-        .summary-card .eyebrow {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.1px;
-            color: #909090;
-            font-weight: 800;
-        }
-
-        .summary-card .value {
-            margin-top: 12px;
-            font-size: 34px;
-            font-weight: 800;
-            letter-spacing: -1px;
-        }
-
-        .summary-card .copy {
-            margin-top: 6px;
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 600;
-        }
-
         .workspace-panel {
             background: var(--panel);
             border: 1px solid #e5e5e5;
@@ -319,7 +289,7 @@
 
         table {
             width: 100%;
-            min-width: 1180px;
+            min-width: 1280px;
             border-collapse: collapse;
         }
 
@@ -433,6 +403,12 @@
             color: var(--danger);
         }
 
+        .writer-pay {
+            font-weight: 800;
+            color: var(--success);
+            white-space: nowrap;
+        }
+
         .order-actions {
             display: grid;
             gap: 10px;
@@ -497,12 +473,6 @@
             font-weight: 700;
         }
 
-        @media (max-width: 1220px) {
-            .summary-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
         @media (max-width: 1080px) {
             .app-shell {
                 grid-template-columns: 1fr;
@@ -519,10 +489,6 @@
         }
 
         @media (max-width: 840px) {
-            .summary-grid {
-                grid-template-columns: 1fr;
-            }
-
             .hero,
             .panel-head {
                 flex-direction: column;
@@ -663,16 +629,6 @@
                 <div class="flash success">{{ session('uploaded') }}</div>
             @endif
 
-            <section class="summary-grid">
-                @foreach($menuItems as $item)
-                    <article class="summary-card">
-                        <div class="eyebrow">{{ $item['label'] }}</div>
-                        <div class="value">{{ $item['count'] }}</div>
-                        <div class="copy">{{ $item['description'] }}</div>
-                    </article>
-                @endforeach
-            </section>
-
             <section class="workspace-panel">
                 <div class="panel-head">
                     <div>
@@ -682,7 +638,7 @@
                     </div>
                     <div class="panel-meta">
                         <div class="panel-pill">{{ count($orders ?? []) }} order(s)</div>
-                        <div class="panel-pill">Price hidden for writer accounts</div>
+                        <div class="panel-pill">Writer pay rate: Ksh {{ number_format(writerRatePerPage(), 0) }}/page</div>
                     </div>
                 </div>
 
@@ -695,6 +651,7 @@
                                 <th>Client</th>
                                 <th>Type</th>
                                 <th>Pages</th>
+                                <th>Writer Pay</th>
                                 <th>Deadline</th>
                                 <th>Status</th>
                                 <th>Assigned</th>
@@ -718,6 +675,7 @@
                                     </td>
                                     <td>{{ $order['type'] }}</td>
                                     <td>{{ $order['pages'] }}</td>
+                                    <td><span class="writer-pay">Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span></td>
                                     <td>
                                         <span class="deadline-live" data-deadline="{{ $order['writer_due_at'] ?? '' }}" data-fallback="{{ $order['writer_deadline_fallback'] }}">
                                             {{ $order['writer_deadline'] }}
@@ -758,7 +716,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="empty">No orders in this queue right now.</td>
+                                    <td colspan="10" class="empty">No orders in this queue right now.</td>
                                 </tr>
                             @endforelse
                         </tbody>

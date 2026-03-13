@@ -344,11 +344,11 @@
                     <span class="pill">{{ $order['subject'] ?? 'Other' }}</span>
                     <span class="pill">{{ $order['type'] ?? 'Essay' }}</span>
                     <span class="pill">{{ $order['pages'] ?? 1 }} page(s)</span>
+                    <span class="pill">Your pay: Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span>
                     <span class="pill">{{ $order['level'] ?? 'College' }}</span>
                     <span class="status {{ $order['status'] ?? 'pending' }}">{{ ($order['status'] ?? '') === 'inprogress' ? 'In Progress' : ucfirst($order['status'] ?? 'pending') }}</span>
                 </div>
             </div>
-            <div class="pill">Client email hidden from writer accounts</div>
         </section>
 
         <div class="grid">
@@ -366,6 +366,10 @@
                                 {{ $order['deadline'] ?? 'N/A' }}
                             </span>
                         </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Writer Pay</div>
+                        <div class="detail-value">Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Instructions</div>
@@ -406,16 +410,6 @@
                             <button class="btn btn-dark" type="submit">Take Order</button>
                         </form>
                     @elseif($isAssignedToCurrent)
-                        <form action="{{ route('writer.order.status', ['id' => $order['id']]) }}" method="POST">
-                            @csrf
-                            <select name="status" aria-label="Update order status">
-                                @foreach($statusOptions as $key => $value)
-                                    <option value="{{ $key }}" {{ (($order['status'] ?? '') === $key) ? 'selected' : '' }}>{{ $value }}</option>
-                                @endforeach
-                            </select>
-                            <button class="btn btn-primary" type="submit">Update Status</button>
-                        </form>
-
                         <form action="{{ route('writer.order.files', ['id' => $order['id']]) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="file" name="files[]" multiple>
