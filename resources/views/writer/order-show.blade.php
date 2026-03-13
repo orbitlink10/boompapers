@@ -129,7 +129,7 @@
         h1 {
             margin: 0;
             max-width: 1000px;
-            font-size: clamp(26px, 2.8vw, 32px);
+            font-size: 14px;
             line-height: 1.18;
             letter-spacing: -0.8px;
         }
@@ -322,7 +322,7 @@
             }
 
             h1 {
-                font-size: 24px;
+                font-size: 14px;
             }
         }
     </style>
