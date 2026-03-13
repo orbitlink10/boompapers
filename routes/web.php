@@ -82,7 +82,11 @@ if (!function_exists('loadWriterPaymentRequests')) {
         $json = file_get_contents($file);
         $data = json_decode($json, true);
 
-        return is_array($data) ? array_values($data) : [];
+        if (!is_array($data)) {
+            return [];
+        }
+
+        return normalizeWriterPaymentRequests(array_values($data));
     }
 }
 
@@ -95,6 +99,96 @@ if (!function_exists('saveWriterPaymentRequests')) {
         }
 
         file_put_contents($file, json_encode(array_values($requests)));
+    }
+}
+
+if (!function_exists('normalizeWriterPaymentRequests')) {
+    function normalizeWriterPaymentRequests(array $requests): array
+    {
+        $normalized = [];
+        $usedNumbers = [];
+        $seenNumbers = [];
+        $changed = false;
+
+        foreach ($requests as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+
+            $paymentId = strtoupper(trim((string) ($request['payment_id'] ?? '')));
+            if (preg_match('/^PAY-(\d+)$/', $paymentId, $matches)) {
+                $number = (int) $matches[1];
+                if ($number > 0 && !isset($usedNumbers[$number])) {
+                    $usedNumbers[$number] = true;
+                }
+            }
+        }
+
+        $nextNumber = empty($usedNumbers) ? 1 : (max(array_keys($usedNumbers)) + 1);
+
+        foreach ($requests as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+
+            $item = $request;
+            $paymentId = strtoupper(trim((string) ($item['payment_id'] ?? '')));
+            $paymentNumber = preg_match('/^PAY-(\d+)$/', $paymentId, $matches) ? (int) $matches[1] : null;
+
+            if ($paymentNumber !== null && $paymentNumber > 0 && !isset($seenNumbers[$paymentNumber])) {
+                $normalizedPaymentId = sprintf('PAY-%04d', $paymentNumber);
+                if ($paymentId !== $normalizedPaymentId) {
+                    $item['payment_id'] = $normalizedPaymentId;
+                    $changed = true;
+                } else {
+                    $item['payment_id'] = $paymentId;
+                }
+                $seenNumbers[$paymentNumber] = true;
+            } else {
+                while (isset($usedNumbers[$nextNumber]) || isset($seenNumbers[$nextNumber])) {
+                    $nextNumber++;
+                }
+
+                $item['payment_id'] = sprintf('PAY-%04d', $nextNumber);
+                $seenNumbers[$nextNumber] = true;
+                $usedNumbers[$nextNumber] = true;
+                $nextNumber++;
+                $changed = true;
+            }
+
+            if (trim((string) ($item['id'] ?? '')) === '') {
+                $item['id'] = (string) Str::uuid();
+                $changed = true;
+            }
+
+            $normalized[] = $item;
+        }
+
+        if ($changed) {
+            saveWriterPaymentRequests($normalized);
+        }
+
+        return $normalized;
+    }
+}
+
+if (!function_exists('nextWriterPaymentId')) {
+    function nextWriterPaymentId(array $requests): string
+    {
+        $maxNumber = 0;
+
+        foreach ($requests as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+
+            $paymentId = strtoupper(trim((string) ($request['payment_id'] ?? '')));
+            if (preg_match('/^PAY-(\d+)$/', $paymentId, $matches)) {
+                $maxNumber = max($maxNumber, (int) $matches[1]);
+            }
+        }
+
+        return sprintf('PAY-%04d', $maxNumber + 1);
     }
 }
 
@@ -1393,6 +1487,7 @@ Route::get('/writer/payments', function () {
 
             return [
                 'id' => trim((string) ($request['id'] ?? '')),
+                'payment_id' => trim((string) ($request['payment_id'] ?? '')),
                 'order_id' => (int) ($request['order_id'] ?? 0),
                 'order_title' => trim((string) ($request['order_title'] ?? 'Untitled')),
                 'pages' => max(1, (int) ($request['pages'] ?? 1)),
@@ -1471,6 +1566,7 @@ Route::post('/writer/payments/{id}/request', function ($id) {
     $amount = writerPayoutForOrder($order);
     $paymentRequest = [
         'id' => (string) Str::uuid(),
+        'payment_id' => nextWriterPaymentId($paymentRequests),
         'order_id' => $targetId,
         'order_title' => trim((string) ($order['title'] ?? 'Untitled')),
         'pages' => max(1, (int) ($order['pages'] ?? 1)),
@@ -2365,6 +2461,7 @@ Route::get('/admin/payments', function () {
 
             return [
                 'id' => trim((string) ($request['id'] ?? '')),
+                'payment_id' => trim((string) ($request['payment_id'] ?? '')),
                 'order_id' => $orderId,
                 'order_title' => trim((string) ($request['order_title'] ?? ($order['title'] ?? 'Untitled'))),
                 'writer_name' => trim((string) ($request['writer_name'] ?? ($order['writer_name'] ?? 'Writer'))),

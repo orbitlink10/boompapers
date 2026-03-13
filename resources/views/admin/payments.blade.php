@@ -149,17 +149,24 @@
             gap: 4px;
         }
 
-        .request-order a,
         .request-order strong {
             color: var(--green);
             font-weight: 900;
-            text-decoration: none;
         }
 
-        .request-meta {
+        .request-meta,
+        .request-meta-link {
             color: var(--muted);
             font-size: 12px;
             font-weight: 700;
+        }
+
+        .request-meta-link {
+            text-decoration: none;
+        }
+
+        .request-meta-link:hover {
+            color: var(--accent);
         }
 
         .writer-name {
@@ -290,7 +297,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Order</th>
+                            <th>Payment ID</th>
                             <th>Writer</th>
                             <th>Pages</th>
                             <th>Amount</th>
@@ -304,12 +311,12 @@
                             <tr>
                                 <td>
                                     <div class="request-order">
+                                        <strong>{{ $payment['payment_id'] ?: 'PAY-0000' }}</strong>
                                         @if(($payment['order_id'] ?? 0) > 0)
-                                            <a href="{{ route('admin.order.show', ['id' => $payment['order_id']]) }}">#{{ $payment['order_id'] }} {{ $payment['order_title'] }}</a>
+                                            <a class="request-meta-link" href="{{ route('admin.order.show', ['id' => $payment['order_id']]) }}">Order #{{ $payment['order_id'] }} {{ $payment['order_title'] }}</a>
                                         @else
-                                            <strong>{{ $payment['order_title'] }}</strong>
+                                            <span class="request-meta">{{ $payment['order_title'] }}</span>
                                         @endif
-                                        <span class="request-meta">Request #{{ $loop->iteration }}</span>
                                     </div>
                                 </td>
                                 <td>
