@@ -28,6 +28,7 @@
         .row{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;}
         .row .label{font-weight:900;color:#2f3236;}
         .row .value{font-weight:700;color:#3a3d42;}
+        .row .value.instructions{display:block;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;}
         .files{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;}
         table{width:100%;border-collapse:collapse;}
         th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;}
@@ -105,7 +106,7 @@
             <div class="row"><span class="label">Powerpoints</span><span class="value">{{ $order['charts'] ?? 0 }} Charts , {{ $order['slides'] ?? 0 }} PPTS</span></div>
             <div class="row"><span class="label">Academic Level</span><span class="value">{{ $order['level'] ?? 'College' }}, {{ $order['category'] ?? 'Standard' }}</span></div>
             <div class="row"><span class="label">Subject</span><span class="value">{{ $order['subject'] ?? 'Other' }}, {{ $order['format'] ?? 'APA' }}</span></div>
-            <div class="row"><span class="label">Instructions</span><span class="value">{{ $order['instructions'] ?? '—' }}</span></div>
+            <div class="row"><span class="label">Instructions</span><div class="value instructions">{{ trim((string) ($order['instructions'] ?? '')) !== '' ? $order['instructions'] : '-' }}</div></div>
         </div>
 
         <div class="files">

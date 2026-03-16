@@ -239,6 +239,12 @@
             word-break: break-word;
         }
 
+        .detail-value.instructions {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.55;
+        }
+
         .actions {
             display: grid;
             gap: 12px;
@@ -379,7 +385,7 @@
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Instructions</div>
-                        <div class="detail-value">{{ trim((string) ($order['instructions'] ?? '')) !== '' ? $order['instructions'] : 'No instructions added.' }}</div>
+                        <div class="detail-value instructions">{{ trim((string) ($order['instructions'] ?? '')) !== '' ? $order['instructions'] : 'No instructions added.' }}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Formatting</div>

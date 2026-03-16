@@ -1976,6 +1976,7 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         : null;
     $vipSupport = $request->boolean('vip_support');
     $draftOutline = $request->boolean('draft_outline');
+    $instructions = trim((string) ($data['instructions'] ?? ''));
     $extrasCost = ($vipSupport ? 25 : 0) + ($draftOutline ? 20 : 0);
     $baseCost = $pages * $pricePerPage;
     $totalCost = round(($baseCost * $categoryMultiplier) + $extrasCost, 2);
@@ -1992,6 +1993,7 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'spacing' => $data['spacing'] ?? 'Double',
         'category' => $selectedCategory,
         'subject' => $data['subject'] ?? 'Other',
+        'instructions' => $instructions !== '' ? $instructions : null,
         'sources' => $data['sources'] ?? 0,
         'slides' => $data['slides'] ?? 0,
         'charts' => $data['charts'] ?? 0,
