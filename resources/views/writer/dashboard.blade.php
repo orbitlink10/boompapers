@@ -330,7 +330,7 @@
         }
 
         .order-title {
-            font-size: 20px;
+            font-size: 12px;
             font-weight: 800;
             color: #232323;
             letter-spacing: -0.5px;
@@ -536,7 +536,7 @@
             }
 
             .order-title {
-                font-size: 17px;
+                font-size: 12px;
             }
         }
     @include('admin.partials.sidebar-styles')
