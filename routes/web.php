@@ -188,7 +188,13 @@ if (!function_exists('nextWriterPaymentId')) {
 if (!function_exists('adminNavigationCounts')) {
     function adminNavigationCounts(): array
     {
-        $orders = collect(loadOrders())->filter(fn ($order) => is_array($order));
+        $orders = collect(loadOrders())
+            ->filter(fn ($order) => is_array($order))
+            ->map(function (array $order) {
+                $order['status'] = normalizeAdminOrderStatus($order['status'] ?? 'pending');
+
+                return $order;
+            });
         $paymentRequests = collect(loadWriterPaymentRequests())->filter(fn ($request) => is_array($request));
 
         $distinctSubjects = $orders
@@ -218,6 +224,14 @@ if (!function_exists('adminNavigationCounts')) {
 
         return [
             'orders' => $orders->count(),
+            'pending' => $orders->where('status', 'pending')->count(),
+            'available' => $orders->where('status', 'available')->count(),
+            'assigned' => $orders->where('status', 'assigned')->count(),
+            'editing' => $orders->where('status', 'editing')->count(),
+            'completed' => $orders->where('status', 'completed')->count(),
+            'revision' => $orders->where('status', 'revision')->count(),
+            'approved' => $orders->where('status', 'approved')->count(),
+            'cancelled' => $orders->where('status', 'cancelled')->count(),
             'courses' => $distinctSubjects,
             'clients' => $distinctClients,
             'writers' => $distinctWriters,
@@ -612,6 +626,23 @@ if (!function_exists('orderPosterType')) {
         $customerName = trim((string) ($order['customer_name'] ?? ''));
 
         return ($customerEmail !== '' || $customerName !== '') ? 'customer' : 'admin';
+    }
+}
+
+if (!function_exists('normalizeAdminOrderStatus')) {
+    function normalizeAdminOrderStatus($value): string
+    {
+        $status = strtolower(trim((string) $value));
+
+        if ($status === '' || $status === 'bidding') {
+            return 'pending';
+        }
+
+        if ($status === 'inprogress') {
+            return 'editing';
+        }
+
+        return $status;
     }
 }
 
@@ -2252,7 +2283,17 @@ Route::get('/admin', function () {
     if (!session('admin_logged_in')) {
         return redirect()->route('admin.login');
     }
-    $orders = loadOrders();
+    $orders = collect(loadOrders())
+        ->filter(fn ($order) => is_array($order))
+        ->map(function (array $order) {
+            $order['status'] = normalizeAdminOrderStatus($order['status'] ?? 'pending');
+            $order['writer_payout'] = writerPayoutForOrder($order);
+
+            return $order;
+        })
+        ->sortByDesc(fn ($order) => (int) ($order['id'] ?? 0))
+        ->values()
+        ->all();
 
     return view('admin.dashboard', [
         'orders' => $orders,
@@ -2264,20 +2305,6 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
     if (!session('admin_logged_in')) {
         return redirect()->route('admin.login');
     }
-    $normalizeAdminOrderStatus = function ($value): string {
-        $status = strtolower(trim((string) $value));
-
-        if ($status === '' || $status === 'bidding') {
-            return 'pending';
-        }
-
-        if ($status === 'inprogress') {
-            return 'editing';
-        }
-
-        return $status;
-    };
-
     $statusOrder = array_flip([
         'pending',
         'available',
@@ -2296,8 +2323,8 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
 
     $orders = collect(loadOrders())
         ->filter(fn ($order) => is_array($order))
-        ->map(function (array $order) use ($normalizeAdminOrderStatus) {
-            $order['status'] = $normalizeAdminOrderStatus($order['status'] ?? 'pending');
+        ->map(function (array $order) {
+            $order['status'] = normalizeAdminOrderStatus($order['status'] ?? 'pending');
             $order['writer_payout'] = writerPayoutForOrder($order);
 
             return $order;

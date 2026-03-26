@@ -48,9 +48,7 @@
         select{padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
         .btn{border:none;border-radius:10px;padding:8px 12px;font-weight:900;cursor:pointer;}
         .btn-primary{background:var(--accent);color:#fff;}
-        .btn-danger{background:#c53030;color:#fff;}
         .action-stack{display:grid;gap:8px;}
-        .delete-form{display:inline-block;}
         @media(max-width:1000px){.layout{grid-template-columns:1fr;} .topbar{flex-direction:column;align-items:flex-start;} }
     @include('admin.partials.sidebar-styles')
     </style>
@@ -146,11 +144,6 @@
                                         <option value="cancelled" {{ ($order['status'] ?? '')==='cancelled' ? 'selected' : '' }}>Cancelled</option>
                                     </select>
                                     <button type="submit" class="btn btn-primary">Assign</button>
-                                </form>
-                                <form class="delete-form" action="{{ route('admin.orders.delete', ['id' => $order['id']]) }}" method="POST" onsubmit="return confirm('Delete this order permanently?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger">Delete</button>
                                 </form>
                             </div>
                         </td>

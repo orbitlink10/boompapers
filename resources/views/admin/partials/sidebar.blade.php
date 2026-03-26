@@ -12,6 +12,7 @@
                     'route_params' => ['status' => 'assigned'],
                     'patterns' => ['admin.orders'],
                     'active_query' => ['status' => 'assigned'],
+                    'count_key' => 'assigned',
                 ],
                 [
                     'label' => 'Completed',
@@ -19,6 +20,7 @@
                     'route_params' => ['status' => 'completed'],
                     'patterns' => ['admin.orders'],
                     'active_query' => ['status' => 'completed'],
+                    'count_key' => 'completed',
                 ],
                 [
                     'label' => 'Revision',
@@ -26,6 +28,7 @@
                     'route_params' => ['status' => 'revision'],
                     'patterns' => ['admin.orders'],
                     'active_query' => ['status' => 'revision'],
+                    'count_key' => 'revision',
                 ],
                 [
                     'label' => 'Approved',
@@ -33,6 +36,7 @@
                     'route_params' => ['status' => 'approved'],
                     'patterns' => ['admin.orders'],
                     'active_query' => ['status' => 'approved'],
+                    'count_key' => 'approved',
                 ],
                 ['label' => 'Payment Requested', 'route' => 'admin.payments', 'patterns' => ['admin.payments'], 'count_key' => 'payment_requests'],
                 ['label' => 'Courses', 'route' => 'admin.courses', 'patterns' => ['admin.courses'], 'count_key' => 'courses'],
