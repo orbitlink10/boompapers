@@ -353,6 +353,37 @@
             font-weight: 600;
         }
 
+        .poster-note {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .poster-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+
+        .poster-badge.admin {
+            background: #eef3ff;
+            color: #455cc7;
+        }
+
+        .poster-badge.customer {
+            background: #edf9ef;
+            color: #187a4b;
+        }
+
         .status {
             display: inline-flex;
             align-items: center;
@@ -543,7 +574,7 @@
                     <div class="nav-title">Main</div>
                     <div class="nav-links">
                         <a class="nav-link {{ ($menu ?? 'available') === 'available' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'available']) }}">
-                            <span>Dashboard</span>
+                            <span>Available</span>
                             <span class="nav-count">{{ $availableCount }}</span>
                         </a>
                         <a class="nav-link {{ ($menu ?? '') === 'assigned' ? 'active' : '' }}" href="{{ route('writer.dashboard', ['menu' => 'assigned']) }}">
@@ -589,7 +620,7 @@
             <section class="hero">
                 <div>
                     <h1>{{ session('writer_name', 'Writer') }}</h1>
-                    <p>Manage your queue from one place. Available orders can be taken, assigned work stays private to you, and revision or completed orders stay grouped in their own sections.</p>
+                    <p>Manage your queue from one place. Available jobs include work posted by both admin and customers, while assigned, revision, and completed work stay grouped in their own sections.</p>
                 </div>
                 <div class="hero-badge">{{ $activeMenu['label'] ?? 'Available' }} Queue</div>
             </section>
@@ -643,6 +674,10 @@
                                         <a class="order-link" href="{{ route('writer.order.show', ['id' => $order['id']]) }}">
                                             <div class="order-title">{{ $order['title'] }}</div>
                                             <div class="meta">{{ $order['subject'] }}</div>
+                                            <div class="poster-note">
+                                                <span class="poster-badge {{ $order['posted_by'] }}">{{ $order['posted_by_label'] }}</span>
+                                                <span>Posted by {{ $order['posted_by_name'] }}</span>
+                                            </div>
                                         </a>
                                     </td>
                                     <td>

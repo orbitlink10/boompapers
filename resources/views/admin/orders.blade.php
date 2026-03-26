@@ -110,7 +110,7 @@
                                 {{ $order['title'] ?? 'Untitled' }}
                             </a>
                         </td>
-                        <td>{{ $order['customer_email'] ?? 'customer' }}</td>
+                        <td>{{ trim((string) ($order['customer_email'] ?? '')) !== '' ? $order['customer_email'] : (orderPosterType($order) === 'admin' ? 'Admin panel' : 'customer') }}</td>
                         <td>{{ $order['writer_name'] ?? 'Unassigned' }}</td>
                         @php
                             $fallbackDeadline = $order['deadline'] ?? '48 Hours';

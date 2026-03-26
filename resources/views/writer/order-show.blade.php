@@ -369,7 +369,13 @@
                 <div class="details">
                     <div class="detail-row">
                         <div class="detail-label">Client</div>
-                        <div class="detail-value">{{ $order['customer_name'] ?? 'Client' }}</div>
+                        <div class="detail-value">
+                            {{ trim((string) ($order['customer_name'] ?? '')) !== '' ? $order['customer_name'] : (orderPosterType($order) === 'admin' ? 'Admin Desk' : 'Client') }}
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Posted By</div>
+                        <div class="detail-value">{{ orderPosterLabel($order) }}: {{ orderPosterName($order) }}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Deadline</div>

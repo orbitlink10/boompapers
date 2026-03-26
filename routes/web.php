@@ -15,15 +15,8 @@ if (!function_exists('loadOrders')) {
                 return [];
             }
 
-            // Keep only orders that belong to a client account.
             $orders = collect($data)
-                ->filter(function ($order) {
-                    if (!is_array($order)) {
-                        return false;
-                    }
-
-                    return trim((string) ($order['customer_email'] ?? '')) !== '';
-                })
+                ->filter(fn ($order) => is_array($order))
                 ->values()
                 ->all();
 
@@ -607,6 +600,62 @@ if (!function_exists('writerDueAtForOrder')) {
     }
 }
 
+if (!function_exists('orderPosterType')) {
+    function orderPosterType(array $order): string
+    {
+        $postedBy = strtolower(trim((string) ($order['posted_by'] ?? '')));
+        if (in_array($postedBy, ['admin', 'customer'], true)) {
+            return $postedBy;
+        }
+
+        $customerEmail = trim((string) ($order['customer_email'] ?? ''));
+        $customerName = trim((string) ($order['customer_name'] ?? ''));
+
+        return ($customerEmail !== '' || $customerName !== '') ? 'customer' : 'admin';
+    }
+}
+
+if (!function_exists('orderPosterLabel')) {
+    function orderPosterLabel(array $order): string
+    {
+        return orderPosterType($order) === 'admin' ? 'Admin' : 'Customer';
+    }
+}
+
+if (!function_exists('orderPosterName')) {
+    function orderPosterName(array $order): string
+    {
+        $posterName = trim((string) ($order['posted_by_name'] ?? ''));
+        if ($posterName !== '') {
+            return $posterName;
+        }
+
+        if (orderPosterType($order) === 'customer') {
+            $customerName = trim((string) ($order['customer_name'] ?? ''));
+
+            return $customerName !== '' ? $customerName : 'Customer';
+        }
+
+        return 'Admin';
+    }
+}
+
+if (!function_exists('orderPosterEmail')) {
+    function orderPosterEmail(array $order): string
+    {
+        $posterEmail = strtolower(trim((string) ($order['posted_by_email'] ?? '')));
+        if ($posterEmail !== '') {
+            return $posterEmail;
+        }
+
+        if (orderPosterType($order) === 'customer') {
+            return strtolower(trim((string) ($order['customer_email'] ?? '')));
+        }
+
+        return '';
+    }
+}
+
 if (!function_exists('normalizeOrderDeadlines')) {
     function normalizeOrderDeadlines(array $orders): array
     {
@@ -639,6 +688,24 @@ if (!function_exists('normalizeOrderDeadlines')) {
             $writerPayout = writerPayoutForOrder($item);
             if ((int) ($item['writer_payout'] ?? 0) !== $writerPayout) {
                 $item['writer_payout'] = $writerPayout;
+                $changed = true;
+            }
+
+            $posterType = orderPosterType($item);
+            if (($item['posted_by'] ?? null) !== $posterType) {
+                $item['posted_by'] = $posterType;
+                $changed = true;
+            }
+
+            $posterName = orderPosterName($item);
+            if (trim((string) ($item['posted_by_name'] ?? '')) !== $posterName) {
+                $item['posted_by_name'] = $posterName;
+                $changed = true;
+            }
+
+            $posterEmail = orderPosterEmail($item);
+            if ($posterEmail !== '' && strtolower(trim((string) ($item['posted_by_email'] ?? ''))) !== $posterEmail) {
+                $item['posted_by_email'] = $posterEmail;
                 $changed = true;
             }
 
@@ -1237,7 +1304,7 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             'key' => 'available',
             'short' => 'AV',
             'label' => 'Available',
-            'description' => 'Open orders ready to take.',
+            'description' => 'Open jobs posted by admin or customers, ready to take.',
             'count' => $ordersCollection->filter(fn ($order) => is_array($order) && $matchesMenu($order, 'available'))->count(),
         ],
         [
@@ -1293,6 +1360,8 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
             $orderWriterId = (int) ($order['writer_id'] ?? 0);
             $orderWriterName = trim((string) ($order['writer_name'] ?? ''));
             $orderWriterEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+            $posterType = orderPosterType($order);
+            $clientName = trim((string) ($order['customer_name'] ?? ''));
 
             $isAssignedToCurrent = $writerId > 0 && $orderWriterId === $writerId
                 || ($writerName !== '' && $orderWriterName !== '' && strcasecmp($orderWriterName, $writerName) === 0)
@@ -1310,8 +1379,11 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
                 'pages' => (int) ($order['pages'] ?? 1),
                 'writer_payout' => writerPayoutForOrder($order),
                 'status' => $canViewOrderStatus ? $status : 'private',
-                'client_name' => $order['customer_name'] ?? 'Client',
+                'client_name' => $clientName !== '' ? $clientName : ($posterType === 'admin' ? 'Admin Desk' : 'Client'),
                 'client_email' => $order['customer_email'] ?? 'client@example.com',
+                'posted_by' => $posterType,
+                'posted_by_label' => orderPosterLabel($order),
+                'posted_by_name' => orderPosterName($order),
                 'assigned_writer' => $isAssignedToCurrent
                     ? ($orderWriterName !== '' ? $orderWriterName : 'Unassigned')
                     : ($isTakeable ? 'Unassigned' : 'Private'),
@@ -1937,7 +2009,7 @@ Route::get('/customer/dashboard', function (\Illuminate\Http\Request $request) {
 })->name('customer.dashboard');
 
 Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
-    if (!session('customer_logged_in')) {
+    if (!session('customer_logged_in') && !session('admin_logged_in')) {
         return redirect()->route('order', ['tab' => 'existing']);
     }
 
@@ -1980,6 +2052,14 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
     $extrasCost = ($vipSupport ? 25 : 0) + ($draftOutline ? 20 : 0);
     $baseCost = $pages * $pricePerPage;
     $totalCost = round(($baseCost * $categoryMultiplier) + $extrasCost, 2);
+    $isAdminPosting = session('admin_logged_in') && !session('customer_logged_in');
+    $postedBy = $isAdminPosting ? 'admin' : 'customer';
+    $posterName = $isAdminPosting
+        ? trim((string) session('admin_name', 'Admin'))
+        : trim((string) session('customer_name', 'Customer'));
+    $posterEmail = $isAdminPosting
+        ? strtolower(trim((string) session('admin_email', adminNotificationEmail())))
+        : strtolower(trim((string) session('customer_email', 'customer')));
     $orders[] = [
         'id' => $id,
         'title' => $data['title'] ?? 'Untitled Paper',
@@ -2002,14 +2082,19 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'created_at' => $createdAt->toIso8601String(),
         'due_at' => $dueAt,
         'writer_payout' => writerPayoutForPages($pages),
-        'customer_email' => session('customer_email', 'customer'),
-        'customer_name' => session('customer_name', 'Customer'),
+        'posted_by' => $postedBy,
+        'posted_by_name' => $posterName !== '' ? $posterName : ($isAdminPosting ? 'Admin' : 'Customer'),
+        'posted_by_email' => $posterEmail,
+        'customer_email' => $isAdminPosting ? null : $posterEmail,
+        'customer_name' => $isAdminPosting ? null : ($posterName !== '' ? $posterName : 'Customer'),
     ];
     saveOrders($orders);
     storeOrderFiles(uploadedFilesFromRequest($request->file('files', [])), $id);
     notifyOrderCreatedByEmail(end($orders) ?: []);
 
-    return redirect()->route('customer.dashboard');
+    return $isAdminPosting
+        ? redirect()->route('admin.orders')->with('assigned', 'Order posted successfully.')
+        : redirect()->route('customer.dashboard');
 })->name('order.submit');
 
 Route::get('/customer/orders/{id}', function ($id) {
