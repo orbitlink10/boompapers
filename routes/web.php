@@ -2489,7 +2489,9 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
         notifyWriterStatusChangeByEmail($updatedOrder, $message);
     }
 
-    return back()->with('assigned', $clearAssignment ? 'Order moved to available successfully.' : 'Order assigned successfully.');
+    return redirect()
+        ->route('admin.orders', ['status' => normalizeAdminOrderStatus($newStatus)])
+        ->with('assigned', $clearAssignment ? 'Order moved to available successfully.' : 'Order assigned successfully.');
 })->name('admin.orders.assign');
 
 Route::delete('/admin/orders/{id}', function ($id) {
