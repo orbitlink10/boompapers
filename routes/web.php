@@ -685,6 +685,24 @@ if (!function_exists('normalizeOrderDeadlines')) {
                 }
             }
 
+            $status = strtolower(trim((string) ($item['status'] ?? 'pending')));
+            if (in_array($status, ['pending', 'available'], true)) {
+                if ((int) ($item['writer_id'] ?? 0) !== 0) {
+                    $item['writer_id'] = 0;
+                    $changed = true;
+                }
+
+                if (trim((string) ($item['writer_name'] ?? '')) !== '') {
+                    $item['writer_name'] = '';
+                    $changed = true;
+                }
+
+                if (trim((string) ($item['writer_email'] ?? '')) !== '') {
+                    $item['writer_email'] = '';
+                    $changed = true;
+                }
+            }
+
             $writerPayout = writerPayoutForOrder($item);
             if ((int) ($item['writer_payout'] ?? 0) !== $writerPayout) {
                 $item['writer_payout'] = $writerPayout;
@@ -2403,6 +2421,7 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
         ? strtolower(trim((string) ($selectedWriter['email'] ?? '')))
         : '';
     $newStatus = strtolower(trim((string) ($data['status'] ?? 'assigned'))) ?: 'assigned';
+    $clearAssignment = in_array($newStatus, ['pending', 'available'], true);
     $orders = loadOrders();
     $updatedOrder = null;
     $statusChanged = false;
@@ -2414,14 +2433,14 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
             $previousWriterId = (string) ($order['writer_id'] ?? '');
             $previousWriterEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
 
-            $order['writer_id'] = $selectedWriterId;
-            $order['writer_name'] = $selectedWriterName;
-            $order['writer_email'] = $selectedWriterEmail;
+            $order['writer_id'] = $clearAssignment ? 0 : $selectedWriterId;
+            $order['writer_name'] = $clearAssignment ? '' : $selectedWriterName;
+            $order['writer_email'] = $clearAssignment ? '' : $selectedWriterEmail;
             $order['status'] = $newStatus;
 
             $statusChanged = $previousStatus !== $newStatus;
-            $writerChanged = $previousWriterId !== (string) $selectedWriterId
-                || $previousWriterEmail !== $selectedWriterEmail;
+            $writerChanged = $previousWriterId !== (string) ($order['writer_id'] ?? '')
+                || $previousWriterEmail !== strtolower(trim((string) ($order['writer_email'] ?? '')));
             $updatedOrder = $order;
             break;
         }
@@ -2435,13 +2454,15 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
 
     if ($statusChanged || $writerChanged) {
         $statusLabel = $newStatus === 'inprogress' ? 'In Progress' : ucfirst($newStatus);
-        $message = $writerChanged
+        $message = ($clearAssignment && $writerChanged)
+            ? 'An administrator returned this order to the available queue. Current status: ' . $statusLabel . '.'
+            : ($writerChanged
             ? 'An administrator assigned you to this order. Current status: ' . $statusLabel . '.'
-            : 'An administrator updated your order status to ' . $statusLabel . '.';
+            : 'An administrator updated your order status to ' . $statusLabel . '.');
         notifyWriterStatusChangeByEmail($updatedOrder, $message);
     }
 
-    return back()->with('assigned', 'Order assigned successfully.');
+    return back()->with('assigned', $clearAssignment ? 'Order moved to available successfully.' : 'Order assigned successfully.');
 })->name('admin.orders.assign');
 
 Route::delete('/admin/orders/{id}', function ($id) {
