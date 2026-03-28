@@ -19,11 +19,11 @@
         .nav-title{font-size:12px;letter-spacing:0.4px;text-transform:uppercase;color:var(--muted);font-weight:800;}
         .nav-link{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;color:#2f3236;font-weight:800;text-decoration:none;}
         .nav-link.active,.nav-link:hover{background:#fff2ec;color:var(--accent);}
-        .content{padding:24px 28px 40px;display:grid;gap:16px;}
+        .content{padding:24px 28px 40px;display:grid;gap:16px;align-content:start;}
         .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;}
         .btn{border:none;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;text-decoration:none;}
         .btn-primary{background:var(--accent);color:#fff;}
-        table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+        table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;align-self:start;}
         th,td{padding:12px 14px;border-bottom:1px solid var(--border);text-align:left;font-size:14px;}
         th{font-weight:900;color:#2c2f33;background:#fff7f3;}
         tr:hover{background:#f9fbfc;}
