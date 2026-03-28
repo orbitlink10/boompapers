@@ -56,6 +56,10 @@
     </style>
 </head>
 <body>
+@php
+    $paymentStatus = orderPaymentStatus($order);
+    $paymentNotice = orderPaymentNotice($order);
+@endphp
 <div class="layout">
     <aside class="sidebar">
         <div class="brand"><span class="icon">◎</span><span>MyAccount</span></div>
@@ -80,6 +84,18 @@
     </aside>
 
     <main class="content">
+        @if(session('status'))
+            <div style="padding:12px 14px; border-radius:12px; background:#e7f8ee; color:#1f9b55; font-weight:800;">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div style="padding:12px 14px; border-radius:12px; background:#fde9e9; color:#c53030; font-weight:800;">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <div class="topline">
             <div>
                 <h1>#{{ $order['id'] }} {{ $order['title'] }}</h1>
@@ -93,13 +109,27 @@
                     <span>Due: {{ $order['deadline'] ?? '48 Hours' }}</span>
                     <span>USD {{ number_format($order['cost'] ?? 0,2) }}</span>
                 </div>
+                @if($paymentNotice)
+                    <div style="margin-top:10px; padding:10px 12px; border-radius:12px; background:{{ $paymentStatus === 'completed' ? '#e7f8ee' : ($paymentStatus === 'pending' ? '#edf7ff' : '#fff3d9') }}; color:{{ $paymentStatus === 'completed' ? '#1f9b55' : ($paymentStatus === 'pending' ? '#145da0' : '#c27a00') }}; font-size:13px; font-weight:800;">
+                        {{ $paymentNotice }}
+                    </div>
+                @endif
                 @if(!empty($order['client_notice']))
                     <div style="margin-top:10px; padding:10px 12px; border-radius:12px; background:#edf7ff; color:#145da0; font-size:13px; font-weight:800;">
                         {{ $order['client_notice'] }}
                     </div>
                 @endif
             </div>
-            <button class="pay">Pay Now (USD {{ number_format($order['cost'] ?? 0,2) }})</button>
+            @if(orderRequiresCustomerPayment($order) && $paymentStatus !== 'completed')
+                <form action="{{ route('customer.order.pay', ['id' => $order['id']]) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="pay">Pay with Pesapal (USD {{ number_format($order['cost'] ?? 0,2) }})</button>
+                </form>
+            @elseif($paymentStatus === 'completed')
+                <div style="padding:14px 18px; background:#e7f8ee; color:#1f9b55; border-radius:12px; font-weight:900;">
+                    Payment Received
+                </div>
+            @endif
         </div>
 
         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px;">
@@ -115,6 +145,7 @@
                 @endphp
                 <div class="row"><span class="label">Deadline</span><span class="value">{{ $order['deadline'] ?? '48 Hours' }}</span></div>
                 <div class="row"><span class="label">Order Status</span><span class="value" style="color:#c27a00;">Order is "{{ ucwords(str_replace('inprogress', 'in progress', $order['status'] ?? 'pending')) }}"</span></div>
+                <div class="row"><span class="label">Payment Status</span><span class="value">{{ orderPaymentStatusLabel($order) }}</span></div>
                 <div class="row"><span class="label">Pages</span><span class="value">{{ $order['pages'] ?? 1 }} Pages 275 Words ({{ $order['spacing'] ?? 'Double' }}) , {{ $order['sources'] ?? 0 }} Sources</span></div>
                 <div class="row"><span class="label">Powerpoints</span><span class="value">{{ $order['charts'] ?? 0 }} Charts , {{ $order['slides'] ?? 0 }} PPTS</span></div>
                 <div class="row"><span class="label">Academic Level</span><span class="value">{{ $order['level'] ?? 'College' }}, {{ $order['category'] ?? 'Standard' }}</span></div>

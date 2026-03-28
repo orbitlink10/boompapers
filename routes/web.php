@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -687,6 +688,444 @@ if (!function_exists('orderPosterEmail')) {
     }
 }
 
+if (!function_exists('normalizeOrderPaymentStatus')) {
+    function normalizeOrderPaymentStatus($value): string
+    {
+        $status = strtolower(trim((string) $value));
+
+        return match ($status) {
+            '', 'unpaid', 'pending_checkout' => 'unpaid',
+            'pending', 'processing', 'submitted' => 'pending',
+            'completed', 'paid', 'success', 'successful' => 'completed',
+            'failed' => 'failed',
+            'invalid' => 'invalid',
+            'reversed', 'refunded' => 'reversed',
+            'cancelled', 'canceled' => 'cancelled',
+            'not_required' => 'not_required',
+            default => $status,
+        };
+    }
+}
+
+if (!function_exists('orderRequiresCustomerPayment')) {
+    function orderRequiresCustomerPayment(array $order): bool
+    {
+        return orderPosterType($order) === 'customer';
+    }
+}
+
+if (!function_exists('orderPaymentStatus')) {
+    function orderPaymentStatus(array $order): string
+    {
+        $status = normalizeOrderPaymentStatus($order['payment_status'] ?? '');
+
+        if (!orderRequiresCustomerPayment($order)) {
+            return $status === 'unpaid' ? 'not_required' : ($status !== '' ? $status : 'not_required');
+        }
+
+        return $status !== '' ? $status : 'unpaid';
+    }
+}
+
+if (!function_exists('orderIsPaid')) {
+    function orderIsPaid(array $order): bool
+    {
+        return orderPaymentStatus($order) === 'completed' || !orderRequiresCustomerPayment($order);
+    }
+}
+
+if (!function_exists('orderCanEnterWorkflow')) {
+    function orderCanEnterWorkflow(array $order): bool
+    {
+        return orderIsPaid($order);
+    }
+}
+
+if (!function_exists('orderPaymentStatusLabel')) {
+    function orderPaymentStatusLabel(array $order): string
+    {
+        return match (orderPaymentStatus($order)) {
+            'unpaid' => 'Pending Checkout',
+            'pending' => 'Awaiting Confirmation',
+            'completed' => 'Paid',
+            'failed' => 'Payment Failed',
+            'invalid' => 'Invalid Payment',
+            'reversed' => 'Payment Reversed',
+            'cancelled' => 'Payment Cancelled',
+            default => 'Payment Status Unknown',
+        };
+    }
+}
+
+if (!function_exists('orderPaymentNotice')) {
+    function orderPaymentNotice(array $order): ?string
+    {
+        if (!orderRequiresCustomerPayment($order)) {
+            return null;
+        }
+
+        return match (orderPaymentStatus($order)) {
+            'unpaid' => 'Payment pending. Complete checkout through Pesapal to activate this order.',
+            'pending' => 'Your payment was submitted to Pesapal and is awaiting confirmation.',
+            'completed' => 'Payment received successfully through Pesapal.',
+            'failed' => 'The last Pesapal payment attempt failed. You can retry payment.',
+            'invalid' => 'Pesapal marked the last payment attempt as invalid. Please retry payment.',
+            'reversed' => 'This payment was reversed after processing. Contact support if this is unexpected.',
+            'cancelled' => 'The Pesapal checkout was cancelled before payment was completed.',
+            default => null,
+        };
+    }
+}
+
+if (!function_exists('pesapalSettings')) {
+    function pesapalSettings(): array
+    {
+        return config('services.pesapal', []);
+    }
+}
+
+if (!function_exists('pesapalBaseUrl')) {
+    function pesapalBaseUrl(): string
+    {
+        $environment = strtolower(trim((string) (pesapalSettings()['environment'] ?? 'sandbox')));
+
+        return in_array($environment, ['live', 'production'], true)
+            ? 'https://pay.pesapal.com/v3'
+            : 'https://cybqa.pesapal.com/pesapalv3';
+    }
+}
+
+if (!function_exists('pesapalCallbackUrl')) {
+    function pesapalCallbackUrl(): string
+    {
+        $configuredUrl = trim((string) (pesapalSettings()['callback_url'] ?? ''));
+
+        if ($configuredUrl !== '') {
+            return $configuredUrl;
+        }
+
+        return rtrim((string) config('app.url', 'http://localhost'), '/') . '/payments/pesapal/callback';
+    }
+}
+
+if (!function_exists('pesapalIpnUrl')) {
+    function pesapalIpnUrl(): string
+    {
+        $configuredUrl = trim((string) (pesapalSettings()['ipn_url'] ?? ''));
+
+        if ($configuredUrl !== '') {
+            return $configuredUrl;
+        }
+
+        return rtrim((string) config('app.url', 'http://localhost'), '/') . '/payments/pesapal/ipn';
+    }
+}
+
+if (!function_exists('pesapalConfigured')) {
+    function pesapalConfigured(): bool
+    {
+        $settings = pesapalSettings();
+
+        return trim((string) ($settings['consumer_key'] ?? '')) !== ''
+            && trim((string) ($settings['consumer_secret'] ?? '')) !== ''
+            && pesapalCallbackUrl() !== ''
+            && pesapalIpnUrl() !== '';
+    }
+}
+
+if (!function_exists('generatePesapalMerchantReference')) {
+    function generatePesapalMerchantReference(int $orderId): string
+    {
+        $rawReference = 'BP-ORDER-' . max(0, $orderId) . '-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(4));
+        $sanitizedReference = preg_replace('/[^A-Za-z0-9_.:-]/', '-', $rawReference) ?: 'BP-ORDER';
+
+        return substr($sanitizedReference, 0, 50);
+    }
+}
+
+if (!function_exists('pesapalMerchantReferenceForOrder')) {
+    function pesapalMerchantReferenceForOrder(array $order): string
+    {
+        $existingReference = trim((string) ($order['payment_reference'] ?? ''));
+        if ($existingReference !== '') {
+            return $existingReference;
+        }
+
+        $rawReference = 'BP-ORDER-' . max(0, (int) ($order['id'] ?? 0));
+        $sanitizedReference = preg_replace('/[^A-Za-z0-9_.:-]/', '-', $rawReference) ?: 'BP-ORDER';
+
+        return substr($sanitizedReference, 0, 50);
+    }
+}
+
+if (!function_exists('pesapalCustomerNameParts')) {
+    function pesapalCustomerNameParts(?string $name): array
+    {
+        $parts = preg_split('/\s+/', trim((string) $name)) ?: [];
+        $parts = array_values(array_filter($parts, fn ($part) => $part !== ''));
+
+        if ($parts === []) {
+            return ['Customer', '', ''];
+        }
+
+        $firstName = array_shift($parts) ?: 'Customer';
+        $lastName = $parts !== [] ? array_pop($parts) : '';
+        $middleName = trim(implode(' ', $parts));
+
+        return [$firstName, $middleName, $lastName];
+    }
+}
+
+if (!function_exists('pesapalRequestToken')) {
+    function pesapalRequestToken(): array
+    {
+        if (!pesapalConfigured()) {
+            throw new \RuntimeException('Pesapal credentials are not configured.');
+        }
+
+        $settings = pesapalSettings();
+        $response = Http::acceptJson()
+            ->asJson()
+            ->timeout(30)
+            ->post(pesapalBaseUrl() . '/api/Auth/RequestToken', [
+                'consumer_key' => trim((string) ($settings['consumer_key'] ?? '')),
+                'consumer_secret' => trim((string) ($settings['consumer_secret'] ?? '')),
+            ]);
+
+        $payload = $response->json();
+        $token = trim((string) ($payload['token'] ?? ''));
+
+        if (!$response->successful() || !is_array($payload) || (string) ($payload['status'] ?? '') !== '200' || $token === '') {
+            $message = trim((string) ($payload['message'] ?? 'Unable to authenticate with Pesapal.'));
+            throw new \RuntimeException($message !== '' ? $message : 'Unable to authenticate with Pesapal.');
+        }
+
+        return $payload;
+    }
+}
+
+if (!function_exists('pesapalRegisterIpn')) {
+    function pesapalRegisterIpn(string $token): array
+    {
+        $response = Http::acceptJson()
+            ->asJson()
+            ->withToken($token)
+            ->timeout(30)
+            ->post(pesapalBaseUrl() . '/api/URLSetup/RegisterIPN', [
+                'url' => pesapalIpnUrl(),
+                'ipn_notification_type' => 'GET',
+            ]);
+
+        $payload = $response->json();
+        $ipnId = trim((string) ($payload['ipn_id'] ?? ''));
+
+        if (!$response->successful() || !is_array($payload) || (string) ($payload['status'] ?? '') !== '200' || $ipnId === '') {
+            $message = trim((string) ($payload['message'] ?? 'Unable to register the Pesapal IPN URL.'));
+            throw new \RuntimeException($message !== '' ? $message : 'Unable to register the Pesapal IPN URL.');
+        }
+
+        return $payload;
+    }
+}
+
+if (!function_exists('pesapalSubmitOrder')) {
+    function pesapalSubmitOrder(array $order): array
+    {
+        $tokenPayload = pesapalRequestToken();
+        $token = trim((string) ($tokenPayload['token'] ?? ''));
+        $ipnPayload = pesapalRegisterIpn($token);
+        [$firstName, $middleName, $lastName] = pesapalCustomerNameParts($order['customer_name'] ?? $order['posted_by_name'] ?? 'Customer');
+        $settings = pesapalSettings();
+        $currency = strtoupper(trim((string) ($settings['currency'] ?? 'USD'))) ?: 'USD';
+        $countryCode = strtoupper(trim((string) ($settings['country_code'] ?? 'KE'))) ?: 'KE';
+        $description = Str::limit(
+            trim('BoomPapers Order #' . (int) ($order['id'] ?? 0) . ' ' . trim((string) ($order['title'] ?? 'Payment'))),
+            100,
+            ''
+        );
+
+        $response = Http::acceptJson()
+            ->asJson()
+            ->withToken($token)
+            ->timeout(30)
+            ->post(pesapalBaseUrl() . '/api/Transactions/SubmitOrderRequest', [
+                'id' => pesapalMerchantReferenceForOrder($order),
+                'currency' => $currency,
+                'amount' => round((float) ($order['cost'] ?? 0), 2),
+                'description' => $description !== '' ? $description : 'BoomPapers payment',
+                'callback_url' => pesapalCallbackUrl(),
+                'redirect_mode' => 'TOP_WINDOW',
+                'notification_id' => trim((string) ($ipnPayload['ipn_id'] ?? '')),
+                'branch' => 'BoomPapers',
+                'billing_address' => [
+                    'email_address' => trim((string) ($order['customer_email'] ?? '')),
+                    'phone_number' => trim((string) ($order['customer_phone'] ?? '')),
+                    'country_code' => $countryCode,
+                    'first_name' => $firstName,
+                    'middle_name' => $middleName,
+                    'last_name' => $lastName,
+                    'line_1' => '',
+                    'line_2' => '',
+                    'city' => '',
+                    'state' => '',
+                    'postal_code' => '',
+                    'zip_code' => '',
+                ],
+            ]);
+
+        $payload = $response->json();
+        $redirectUrl = trim((string) ($payload['redirect_url'] ?? ''));
+        $trackingId = trim((string) ($payload['order_tracking_id'] ?? ''));
+
+        if (!$response->successful() || !is_array($payload) || (string) ($payload['status'] ?? '') !== '200' || $redirectUrl === '' || $trackingId === '') {
+            $message = trim((string) ($payload['message'] ?? 'Unable to create a Pesapal payment request.'));
+            throw new \RuntimeException($message !== '' ? $message : 'Unable to create a Pesapal payment request.');
+        }
+
+        return $payload;
+    }
+}
+
+if (!function_exists('findOrderIdByMerchantReference')) {
+    function findOrderIdByMerchantReference(string $merchantReference): ?int
+    {
+        $merchantReference = trim($merchantReference);
+        if ($merchantReference === '') {
+            return null;
+        }
+
+        if (preg_match('/^BP-ORDER-(\d+)(?:[-:.][A-Za-z0-9_.:-]+)?$/', $merchantReference, $matches)) {
+            return (int) $matches[1];
+        }
+
+        $orders = loadOrders();
+
+        foreach ($orders as $order) {
+            if (!is_array($order)) {
+                continue;
+            }
+
+            if (pesapalMerchantReferenceForOrder($order) === $merchantReference) {
+                return (int) ($order['id'] ?? 0);
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('pesapalGetTransactionStatus')) {
+    function pesapalGetTransactionStatus(string $trackingId): array
+    {
+        $trackingId = trim($trackingId);
+        if ($trackingId === '') {
+            throw new \RuntimeException('Missing Pesapal tracking ID.');
+        }
+
+        $tokenPayload = pesapalRequestToken();
+        $token = trim((string) ($tokenPayload['token'] ?? ''));
+        $response = Http::acceptJson()
+            ->withToken($token)
+            ->timeout(30)
+            ->get(pesapalBaseUrl() . '/api/Transactions/GetTransactionStatus', [
+                'orderTrackingId' => $trackingId,
+            ]);
+
+        $payload = $response->json();
+
+        if (!$response->successful() || !is_array($payload) || (string) ($payload['status'] ?? '') !== '200') {
+            $message = trim((string) ($payload['message'] ?? 'Unable to verify the Pesapal payment status.'));
+            throw new \RuntimeException($message !== '' ? $message : 'Unable to verify the Pesapal payment status.');
+        }
+
+        return $payload;
+    }
+}
+
+if (!function_exists('syncOrderPaymentStatusFromPesapal')) {
+    function syncOrderPaymentStatusFromPesapal(int $orderId, array $transactionStatus, ?string $trackingId = null, ?string $merchantReference = null): ?array
+    {
+        $orders = loadOrders();
+        $updatedOrder = null;
+        $justMarkedPaid = false;
+        $changed = false;
+
+        foreach ($orders as &$order) {
+            if (!is_array($order) || (int) ($order['id'] ?? 0) !== $orderId) {
+                continue;
+            }
+
+            $currentPaymentStatus = orderPaymentStatus($order);
+            $paymentStatusDescription = strtolower(trim((string) ($transactionStatus['payment_status_description'] ?? '')));
+            $nextPaymentStatus = match ($paymentStatusDescription) {
+                'completed' => 'completed',
+                'failed' => 'failed',
+                'invalid' => 'invalid',
+                'reversed' => 'reversed',
+                'cancelled', 'canceled' => 'cancelled',
+                default => 'pending',
+            };
+
+            $order['payment_status'] = $nextPaymentStatus;
+            $order['payment_reference'] = $merchantReference !== null && trim($merchantReference) !== ''
+                ? trim($merchantReference)
+                : pesapalMerchantReferenceForOrder($order);
+            $order['payment_tracking_id'] = $trackingId !== null && trim($trackingId) !== ''
+                ? trim($trackingId)
+                : trim((string) ($order['payment_tracking_id'] ?? ''));
+            $order['payment_method'] = trim((string) ($transactionStatus['payment_method'] ?? ($order['payment_method'] ?? '')));
+            $order['payment_confirmation_code'] = trim((string) ($transactionStatus['confirmation_code'] ?? ($order['payment_confirmation_code'] ?? '')));
+            $order['payment_account'] = trim((string) ($transactionStatus['payment_account'] ?? ($order['payment_account'] ?? '')));
+            $order['payment_currency'] = strtoupper(trim((string) ($transactionStatus['currency'] ?? ($order['payment_currency'] ?? 'USD'))));
+            $order['payment_amount'] = round((float) ($transactionStatus['amount'] ?? ($order['payment_amount'] ?? ($order['cost'] ?? 0))), 2);
+            $order['payment_status_description'] = trim((string) ($transactionStatus['payment_status_description'] ?? ($order['payment_status_description'] ?? '')));
+            $order['payment_message'] = trim((string) ($transactionStatus['description'] ?? ($transactionStatus['message'] ?? ($order['payment_message'] ?? ''))));
+            $order['payment_checked_at'] = now()->toIso8601String();
+
+            if ($nextPaymentStatus === 'completed') {
+                if (trim((string) ($order['paid_at'] ?? '')) === '') {
+                    $order['paid_at'] = now()->toIso8601String();
+                }
+
+                if ($currentPaymentStatus !== 'completed') {
+                    $justMarkedPaid = true;
+                }
+            }
+
+            $updatedOrder = $order;
+            $changed = true;
+            break;
+        }
+        unset($order);
+
+        if (!$changed || !is_array($updatedOrder)) {
+            return null;
+        }
+
+        if ($justMarkedPaid && trim((string) ($updatedOrder['payment_notified_at'] ?? '')) === '') {
+            $updatedOrder['payment_notified_at'] = now()->toIso8601String();
+
+            foreach ($orders as &$order) {
+                if (!is_array($order) || (int) ($order['id'] ?? 0) !== $orderId) {
+                    continue;
+                }
+
+                $order = $updatedOrder;
+                break;
+            }
+            unset($order);
+        }
+
+        saveOrders($orders);
+
+        if ($justMarkedPaid) {
+            notifyOrderCreatedByEmail($updatedOrder);
+        }
+
+        return $updatedOrder;
+    }
+}
+
 if (!function_exists('normalizeOrderDeadlines')) {
     function normalizeOrderDeadlines(array $orders): array
     {
@@ -755,6 +1194,18 @@ if (!function_exists('normalizeOrderDeadlines')) {
             $posterEmail = orderPosterEmail($item);
             if ($posterEmail !== '' && strtolower(trim((string) ($item['posted_by_email'] ?? ''))) !== $posterEmail) {
                 $item['posted_by_email'] = $posterEmail;
+                $changed = true;
+            }
+
+            $paymentStatus = orderPaymentStatus($item);
+            if (trim((string) ($item['payment_status'] ?? '')) !== $paymentStatus) {
+                $item['payment_status'] = $paymentStatus;
+                $changed = true;
+            }
+
+            $paymentReference = pesapalMerchantReferenceForOrder($item);
+            if ($paymentReference !== '' && trim((string) ($item['payment_reference'] ?? '')) !== $paymentReference) {
+                $item['payment_reference'] = $paymentReference;
                 $changed = true;
             }
 
@@ -1319,6 +1770,7 @@ Route::get('/writer/dashboard', function (\Illuminate\Http\Request $request) {
         return $assignedId <= 0
             && $assignedName === ''
             && $assignedEmail === ''
+            && orderCanEnterWorkflow($order)
             && in_array($status, ['pending', 'available'], true);
     };
 
@@ -1501,6 +1953,7 @@ Route::get('/writer/payments', function () {
         return $assignedId <= 0
             && $assignedName === ''
             && $assignedEmail === ''
+            && orderCanEnterWorkflow($order)
             && in_array($status, ['pending', 'available'], true);
     };
 
@@ -1748,6 +2201,7 @@ Route::get('/writer/orders/{id}', function ($id) {
     $isAvailable = $assignedId <= 0
         && $assignedName === ''
         && $assignedEmail === ''
+        && orderCanEnterWorkflow($order)
         && in_array($status, ['pending', 'available'], true);
 
     if (!$isMine && !$isAvailable) {
@@ -1805,6 +2259,10 @@ Route::post('/writer/orders/{id}/claim', function (\Illuminate\Http\Request $req
 
         if (!in_array($status, ['pending', 'available'], true)) {
             return back()->with('error', 'Only available orders can be claimed right now.');
+        }
+
+        if (!orderCanEnterWorkflow($order)) {
+            return back()->with('error', 'This order is awaiting payment confirmation and cannot be claimed yet.');
         }
 
         $noticeTime = now()->toIso8601String();
@@ -2109,7 +2567,7 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
     $posterEmail = $isAdminPosting
         ? strtolower(trim((string) session('admin_email', adminNotificationEmail())))
         : strtolower(trim((string) session('customer_email', 'customer')));
-    $orders[] = [
+    $orderRecord = [
         'id' => $id,
         'title' => $data['title'] ?? 'Untitled Paper',
         'pages' => $pages,
@@ -2136,15 +2594,197 @@ Route::post('/order/submit', function (\Illuminate\Http\Request $request) {
         'posted_by_email' => $posterEmail,
         'customer_email' => $isAdminPosting ? null : $posterEmail,
         'customer_name' => $isAdminPosting ? null : ($posterName !== '' ? $posterName : 'Customer'),
+        'payment_status' => $isAdminPosting ? 'not_required' : 'unpaid',
+        'payment_reference' => $isAdminPosting ? '' : generatePesapalMerchantReference($id),
+        'payment_currency' => strtoupper(trim((string) (pesapalSettings()['currency'] ?? 'USD'))) ?: 'USD',
+        'payment_amount' => $totalCost,
     ];
+    $orders[] = $orderRecord;
     saveOrders($orders);
     storeOrderFiles(uploadedFilesFromRequest($request->file('files', [])), $id);
-    notifyOrderCreatedByEmail(end($orders) ?: []);
 
-    return $isAdminPosting
-        ? redirect()->route('admin.orders')->with('assigned', 'Order posted successfully.')
-        : redirect()->route('customer.dashboard');
+    if ($isAdminPosting) {
+        notifyOrderCreatedByEmail($orderRecord);
+
+        return redirect()->route('admin.orders')->with('assigned', 'Order posted successfully.');
+    }
+
+    try {
+        $pesapalOrder = $orderRecord;
+        $pesapalOrder['payment_reference'] = generatePesapalMerchantReference($id);
+        $checkout = pesapalSubmitOrder($pesapalOrder);
+        $orders = loadOrders();
+
+        foreach ($orders as &$order) {
+            if (!is_array($order) || (int) ($order['id'] ?? 0) !== $id) {
+                continue;
+            }
+
+            $order['payment_reference'] = trim((string) ($checkout['merchant_reference'] ?? $pesapalOrder['payment_reference']));
+            $order['payment_tracking_id'] = trim((string) ($checkout['order_tracking_id'] ?? ''));
+            $order['payment_checkout_url'] = trim((string) ($checkout['redirect_url'] ?? ''));
+            $order['payment_last_started_at'] = now()->toIso8601String();
+            break;
+        }
+        unset($order);
+
+        saveOrders($orders);
+
+        return redirect()->away(trim((string) ($checkout['redirect_url'] ?? '')));
+    } catch (\Throwable $e) {
+        report($e);
+
+        return redirect()
+            ->route('customer.order.show', ['id' => $id])
+            ->with('error', 'Your order was saved, but Pesapal checkout could not be started. Click Pay Now to retry.');
+    }
 })->name('order.submit');
+
+Route::post('/customer/orders/{id}/pay', function ($id) {
+    if (!session('customer_logged_in')) {
+        return redirect()->route('order', ['tab' => 'existing']);
+    }
+
+    $targetId = (int) $id;
+    $customerOrder = collect(ordersForCustomer(loadOrders(), session('customer_email')))
+        ->firstWhere('id', $targetId);
+
+    if (!$customerOrder || !is_array($customerOrder)) {
+        return redirect()->route('customer.dashboard')->with('error', 'Order not found.');
+    }
+
+    if (!orderRequiresCustomerPayment($customerOrder)) {
+        return redirect()->route('customer.order.show', ['id' => $targetId])->with('status', 'This order does not require online payment.');
+    }
+
+    if (orderIsPaid($customerOrder)) {
+        return redirect()->route('customer.order.show', ['id' => $targetId])->with('status', 'This order is already marked as paid.');
+    }
+
+    try {
+        $orders = loadOrders();
+        $paymentReference = generatePesapalMerchantReference($targetId);
+
+        foreach ($orders as &$order) {
+            if (!is_array($order) || (int) ($order['id'] ?? 0) !== $targetId) {
+                continue;
+            }
+
+            $order['payment_reference'] = $paymentReference;
+            $customerOrder = $order;
+            break;
+        }
+        unset($order);
+
+        saveOrders($orders);
+
+        $checkout = pesapalSubmitOrder($customerOrder);
+        $orders = loadOrders();
+
+        foreach ($orders as &$order) {
+            if (!is_array($order) || (int) ($order['id'] ?? 0) !== $targetId) {
+                continue;
+            }
+
+            $order['payment_reference'] = trim((string) ($checkout['merchant_reference'] ?? $paymentReference));
+            $order['payment_tracking_id'] = trim((string) ($checkout['order_tracking_id'] ?? ''));
+            $order['payment_checkout_url'] = trim((string) ($checkout['redirect_url'] ?? ''));
+            $order['payment_last_started_at'] = now()->toIso8601String();
+            break;
+        }
+        unset($order);
+
+        saveOrders($orders);
+
+        return redirect()->away(trim((string) ($checkout['redirect_url'] ?? '')));
+    } catch (\Throwable $e) {
+        report($e);
+
+        return redirect()
+            ->route('customer.order.show', ['id' => $targetId])
+            ->with('error', 'Unable to start the Pesapal checkout right now. Please try again shortly.');
+    }
+})->name('customer.order.pay');
+
+Route::get('/payments/pesapal/callback', function (\Illuminate\Http\Request $request) {
+    $trackingId = trim((string) $request->query('OrderTrackingId', ''));
+    $merchantReference = trim((string) $request->query('OrderMerchantReference', ''));
+    $orderId = findOrderIdByMerchantReference($merchantReference);
+
+    if ($orderId === null || $orderId <= 0) {
+        return redirect()->route('customer.dashboard')->with('error', 'We could not match that Pesapal payment to an order.');
+    }
+
+    try {
+        $transactionStatus = pesapalGetTransactionStatus($trackingId);
+        $updatedOrder = syncOrderPaymentStatusFromPesapal($orderId, $transactionStatus, $trackingId, $merchantReference);
+
+        if (!$updatedOrder) {
+            return redirect()->route('customer.dashboard')->with('error', 'Order not found while updating the Pesapal payment.');
+        }
+
+        $paymentStatus = orderPaymentStatus($updatedOrder);
+        $flashKey = $paymentStatus === 'completed' ? 'status' : 'error';
+        $flashMessage = $paymentStatus === 'completed'
+            ? 'Pesapal payment confirmed successfully.'
+            : 'Pesapal payment status: ' . orderPaymentStatusLabel($updatedOrder) . '.';
+
+        if (session('customer_logged_in')) {
+            return redirect()
+                ->route('customer.order.show', ['id' => $orderId])
+                ->with($flashKey, $flashMessage);
+        }
+
+        return redirect()->route('order', ['tab' => 'existing'])->with($flashKey, $flashMessage);
+    } catch (\Throwable $e) {
+        report($e);
+
+        if (session('customer_logged_in')) {
+            return redirect()
+                ->route('customer.order.show', ['id' => $orderId])
+                ->with('error', 'We could not verify the Pesapal payment yet. Please refresh this order shortly.');
+        }
+
+        return redirect()->route('order', ['tab' => 'existing'])
+            ->with('error', 'We could not verify the Pesapal payment yet. Please log in and check your order shortly.');
+    }
+})->name('payments.pesapal.callback');
+
+Route::get('/payments/pesapal/ipn', function (\Illuminate\Http\Request $request) {
+    $trackingId = trim((string) $request->query('OrderTrackingId', ''));
+    $merchantReference = trim((string) $request->query('OrderMerchantReference', ''));
+    $notificationType = trim((string) $request->query('OrderNotificationType', 'IPNCHANGE'));
+    $orderId = findOrderIdByMerchantReference($merchantReference);
+
+    if ($orderId === null || $orderId <= 0) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'Order not found.',
+        ], 404);
+    }
+
+    try {
+        $transactionStatus = pesapalGetTransactionStatus($trackingId);
+        $updatedOrder = syncOrderPaymentStatusFromPesapal($orderId, $transactionStatus, $trackingId, $merchantReference);
+
+        return response()->json([
+            'status' => 200,
+            'orderNotificationType' => $notificationType,
+            'orderTrackingId' => $trackingId,
+            'orderMerchantReference' => $merchantReference,
+            'paymentStatus' => is_array($updatedOrder) ? orderPaymentStatus($updatedOrder) : 'unknown',
+        ]);
+    } catch (\Throwable $e) {
+        report($e);
+
+        return response()->json([
+            'status' => 500,
+            'orderTrackingId' => $trackingId,
+            'orderMerchantReference' => $merchantReference,
+            'message' => 'Unable to verify payment status.',
+        ], 500);
+    }
+})->name('payments.pesapal.ipn');
 
 Route::get('/customer/orders/{id}', function ($id) {
     if (!session('customer_logged_in')) {
@@ -2459,6 +3099,13 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
             $previousStatus = strtolower(trim((string) ($order['status'] ?? 'pending')));
             $previousWriterId = (string) ($order['writer_id'] ?? '');
             $previousWriterEmail = strtolower(trim((string) ($order['writer_email'] ?? '')));
+
+            if (orderRequiresCustomerPayment($order) && !orderIsPaid($order)) {
+                $allowedWhileUnpaid = ['pending', 'available', 'cancelled'];
+                if (!in_array($newStatus, $allowedWhileUnpaid, true)) {
+                    return back()->with('assigned', 'This customer order is still awaiting Pesapal payment confirmation.');
+                }
+            }
 
             $order['writer_id'] = $clearAssignment ? 0 : $selectedWriterId;
             $order['writer_name'] = $clearAssignment ? '' : $selectedWriterName;

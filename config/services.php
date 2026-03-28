@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'pesapal' => [
+        'environment' => env('PESAPAL_ENV', 'sandbox'),
+        'consumer_key' => env('PESAPAL_CONSUMER_KEY'),
+        'consumer_secret' => env('PESAPAL_CONSUMER_SECRET'),
+        'callback_url' => env('PESAPAL_CALLBACK_URL'),
+        'ipn_url' => env('PESAPAL_IPN_URL'),
+        'currency' => env('PESAPAL_CURRENCY', 'USD'),
+        'country_code' => env('PESAPAL_COUNTRY_CODE', 'KE'),
+    ],
+
 ];

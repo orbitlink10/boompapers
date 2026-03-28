@@ -318,6 +318,18 @@
             </div>
         </div>
 
+        @if(session('status'))
+            <div style="padding:12px 14px; border-radius:12px; background:#e7f8ee; color:#1f9b55; font-weight:800;">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div style="padding:12px 14px; border-radius:12px; background:#fde9e9; color:#c53030; font-weight:800;">
+                {{ session('error') }}
+            </div>
+        @endif
+
         @if(($statusFilter ?? 'all') === 'all')
             <div class="search-bar">
                 <input type="text" placeholder="Search orders">
@@ -360,6 +372,12 @@
                                 {{ $order['title'] }}
                             </a>
                             <br><small style="color:var(--muted); font-weight:700;">{{ $order['pages'] }} Pg(s)</small>
+                            @if(orderPaymentNotice($order))
+                                @php $paymentStatus = orderPaymentStatus($order); @endphp
+                                <div style="margin-top:8px; padding:8px 10px; border-radius:10px; background:{{ $paymentStatus === 'completed' ? '#e7f8ee' : ($paymentStatus === 'pending' ? '#edf7ff' : '#fff3d9') }}; color:{{ $paymentStatus === 'completed' ? '#1f9b55' : ($paymentStatus === 'pending' ? '#145da0' : '#c27a00') }}; font-size:12px; font-weight:800;">
+                                    {{ orderPaymentNotice($order) }}
+                                </div>
+                            @endif
                             @if(!empty($order['client_notice']))
                                 <div style="margin-top:8px; padding:8px 10px; border-radius:10px; background:#edf7ff; color:#145da0; font-size:12px; font-weight:800;">
                                     {{ $order['client_notice'] }}
