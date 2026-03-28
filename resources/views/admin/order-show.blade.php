@@ -38,7 +38,11 @@
         .upload{margin-top:12px;display:grid;gap:10px;}
         .btn{border:none;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;}
         .btn-primary{background:var(--accent);color:#fff;}
+        .btn-danger{background:#c53030;color:#fff;}
+        .btn-danger:hover{background:#a61f1f;}
         .assign-form{display:flex;gap:8px;flex-wrap:wrap;}
+        .header-actions{display:grid;gap:10px;justify-items:end;align-content:start;}
+        .delete-form{display:flex;justify-content:flex-end;}
         select,input,button{font-family:inherit;font-weight:800;}
         select{padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
         .badge-status{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;font-weight:900;}
@@ -74,22 +78,30 @@
                     <span>Writer pay: Ksh {{ number_format($order['writer_payout'] ?? writerPayoutForOrder($order), 0) }}</span>
                 </div>
             </div>
-            <form class="assign-form" action="{{ route('admin.orders.assign', ['id'=>$order['id']]) }}" method="POST" style="align-self:flex-start;">
-                @csrf
-                <select name="writer_id" required>
-                    <option value="">Select writer</option>
-                    @foreach(($writers ?? []) as $writer)
-                        <option value="{{ $writer['id'] }}" {{ ($order['writer_id'] ?? null) == $writer['id'] ? 'selected' : '' }}>{{ $writer['name'] }}</option>
-                    @endforeach
-                </select>
-                <select name="status">
-                    @php $sts=['pending','available','assigned','inprogress','editing','revision','completed','approved','cancelled']; @endphp
-                    @foreach($sts as $st)
-                        <option value="{{ $st }}" {{ ($order['status'] ?? '')===$st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="btn btn-primary">Assign</button>
-            </form>
+            <div class="header-actions">
+                <form class="assign-form" action="{{ route('admin.orders.assign', ['id'=>$order['id']]) }}" method="POST">
+                    @csrf
+                    <select name="writer_id" required>
+                        <option value="">Select writer</option>
+                        @foreach(($writers ?? []) as $writer)
+                            <option value="{{ $writer['id'] }}" {{ ($order['writer_id'] ?? null) == $writer['id'] ? 'selected' : '' }}>{{ $writer['name'] }}</option>
+                        @endforeach
+                    </select>
+                    <select name="status">
+                        @php $sts=['pending','available','assigned','inprogress','editing','revision','completed','approved','cancelled']; @endphp
+                        @foreach($sts as $st)
+                            <option value="{{ $st }}" {{ ($order['status'] ?? '')===$st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="btn btn-primary">Assign</button>
+                </form>
+                <form class="delete-form" action="{{ route('admin.orders.delete', ['id' => $order['id']]) }}" method="POST" onsubmit="return confirm('Delete this order? This action cannot be undone.');">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="redirect_to" value="{{ route('admin.orders') }}">
+                    <button type="submit" class="btn btn-danger">Delete Order</button>
+                </form>
+            </div>
         </div>
 
         <div class="info-grid">

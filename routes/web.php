@@ -2494,7 +2494,7 @@ Route::post('/admin/orders/{id}/assign', function (\Illuminate\Http\Request $req
         ->with('assigned', $clearAssignment ? 'Order moved to available successfully.' : 'Order assigned successfully.');
 })->name('admin.orders.assign');
 
-Route::delete('/admin/orders/{id}', function ($id) {
+Route::delete('/admin/orders/{id}', function (\Illuminate\Http\Request $request, $id) {
     if (!session('admin_logged_in')) {
         return redirect()->route('admin.login');
     }
@@ -2536,6 +2536,11 @@ Route::delete('/admin/orders/{id}', function ($id) {
     }
 
     session(['order_files' => $keptFiles]);
+
+    $redirectTo = trim((string) $request->input('redirect_to', ''));
+    if ($redirectTo !== '' && str_starts_with($redirectTo, url('/'))) {
+        return redirect($redirectTo)->with('deleted', 'Order deleted successfully.');
+    }
 
     return back()->with('deleted', 'Order deleted successfully.');
 })->name('admin.orders.delete');

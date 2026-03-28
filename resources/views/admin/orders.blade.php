@@ -192,21 +192,46 @@
     // on load
     applyFilter(initialFilter || '');
 
-    // Update status pill live when status select changes; refilter rows immediately
+    const formatStatusLabel = (value) => {
+        if (value === 'inprogress') {
+            return 'In Progress';
+        }
+
+        return value
+            .split('_')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+    };
+
+    const submitAssignForm = (select) => {
+        const form = select.closest('form.assign-form');
+        if (!form) {
+            return;
+        }
+
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+            return;
+        }
+
+        form.submit();
+    };
+
+    // Update status pill live when status select changes and submit immediately
     document.querySelectorAll('.status-select').forEach(sel => {
         sel.addEventListener('change', () => {
             const orderId = sel.dataset.order;
             const val = sel.value || 'pending';
             const pill = document.querySelector('.status-pill[data-order=\"' + orderId + '\"]');
             if (pill) {
-                pill.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace('_',' ');
+                pill.textContent = formatStatusLabel(val);
                 pill.className = 'status status-pill ' + val;
             }
             const row = document.querySelector('tr[data-order=\"' + orderId + '\"]');
             if (row) {
                 row.dataset.status = val;
             }
-            applyFilter(val); // switch visible list to new status without reload
+            submitAssignForm(sel);
         });
     });
 
