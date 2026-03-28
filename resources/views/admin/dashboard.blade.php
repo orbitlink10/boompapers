@@ -9,30 +9,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #1d7bff;
-            --primary-strong: #1466de;
-            --primary-soft: #eaf3ff;
-            --dark: #14141a;
-            --muted: #5c5c6a;
+            --accent: #f25c3c;
+            --accent-strong: #df4d2d;
+            --accent-soft: #fff2ec;
+            --primary: var(--accent);
+            --primary-strong: var(--accent-strong);
+            --primary-soft: var(--accent-soft);
+            --sidebar-accent: var(--accent);
+            --sidebar-accent-secondary: #ff8a65;
+            --sidebar-soft: var(--accent-soft);
+            --dark: #1c1c28;
+            --muted: #6b6b7a;
             --card: #ffffff;
-            --border: #e6e8f0;
+            --border: #e5e8ed;
             --bg: #f7f8fb;
-            --shadow: 0 16px 36px rgba(23, 44, 85, 0.08);
+            --green: #0f5951;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-            background:
-                radial-gradient(circle at 90% 8%, rgba(29, 123, 255, 0.12), rgba(29, 123, 255, 0) 28%),
-                var(--bg);
+            background: var(--bg);
             color: var(--dark);
             min-height: 100vh;
         }
         a { color: inherit; text-decoration: none; }
         .layout {
             display: grid;
-            grid-template-columns: 260px 1fr;
+            grid-template-columns: 240px 1fr;
             min-height: 100vh;
         }
         .sidebar {
@@ -42,7 +46,7 @@
             display: flex;
             flex-direction: column;
             gap: 22px;
-            box-shadow: 8px 0 30px rgba(0, 0, 0, 0.04);
+            box-shadow: none;
         }
         .brand {
             display: flex;
@@ -55,12 +59,12 @@
             width: 42px;
             height: 42px;
             border-radius: 14px;
-            background: linear-gradient(135deg, var(--primary), #25c7ff);
+            background: linear-gradient(135deg, var(--accent), #ff8a65);
             color: #fff;
             display: grid;
             place-items: center;
             font-size: 16px;
-            box-shadow: 0 14px 28px rgba(29, 123, 255, 0.32);
+            box-shadow: none;
         }
         .badge-label {
             background: var(--primary-soft);
@@ -105,21 +109,20 @@
             color: #2f4168;
         }
         .content {
-            padding: 24px 28px 42px;
+            padding: 24px 28px 40px;
             display: grid;
             gap: 18px;
-            background: transparent;
+            align-content: start;
         }
         .topbar {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 16px 18px;
             display: flex;
             align-items: center;
             gap: 16px;
             justify-content: space-between;
-            box-shadow: var(--shadow);
         }
         .topline { display: grid; gap: 2px; }
         .eyebrow { font-size: 13px; color: var(--muted); font-weight: 700; }
@@ -143,9 +146,8 @@
         .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
         .btn:not(.btn-primary) { border-color: var(--border); }
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), #25c7ff);
+            background: var(--accent);
             color: #fff;
-            box-shadow: 0 14px 30px rgba(29, 123, 255, 0.3);
         }
         .summary-grid {
             display: grid;
@@ -155,16 +157,15 @@
         .card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 18px;
+            border-radius: 12px;
             padding: 18px;
-            box-shadow: var(--shadow);
             display: grid;
             gap: 8px;
-            transition: transform .14s ease, box-shadow .14s ease;
+            transition: transform .14s ease, border-color .14s ease;
         }
         .card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 20px 36px rgba(23, 44, 85, 0.14);
+            border-color: #f4cfc5;
         }
         .card .label {
             display: flex;
@@ -178,9 +179,9 @@
             width: 28px;
             height: 28px;
             border-radius: 9px;
-            background: var(--primary-soft);
-            color: var(--primary-strong);
-            border: 1px solid #d8e7ff;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid #ffd7cd;
             display: inline-grid;
             place-items: center;
             font-size: 12px;
@@ -191,14 +192,14 @@
         .card small { color: var(--muted); font-size: 12px; }
         .card .trend {
             margin-left: auto;
-            color: var(--primary);
+            color: var(--green);
             font-size: 12px;
             font-weight: 800;
         }
         .chart-placeholder {
-            background: linear-gradient(130deg, rgba(29, 123, 255, 0.12), rgba(37, 199, 255, 0.05) 38%, #fff 100%);
-            border-radius: 20px;
-            border: 1px dashed rgba(29, 123, 255, 0.3);
+            background: linear-gradient(180deg, #fffaf7 0%, #ffffff 100%);
+            border-radius: 12px;
+            border: 1px dashed #f4cfc5;
             height: 180px;
             display: grid;
             place-items: center;
@@ -214,7 +215,7 @@
             width: 100%;
             border-collapse: collapse;
         }
-        thead { background: #f3f8ff; }
+        thead { background: #fff7f3; }
         th, td {
             padding: 14px 16px;
             border-bottom: 1px solid var(--border);
@@ -222,7 +223,7 @@
             font-size: 14px;
         }
         th { font-weight: 800; color: #3a3a45; }
-        tbody tr:hover { background: #f7fbff; }
+        tbody tr:hover { background: #fffaf7; }
         .status {
             display: inline-flex;
             align-items: center;
@@ -233,20 +234,20 @@
             font-size: 13px;
         }
         .status.pending { background: #fff4e5; color: #d66b00; }
-        .status.available { background: #eef4ff; color: #4164a8; }
+        .status.available { background: #e7f8ee; color: #1f9b55; }
         .status.assigned { background: #e8f5ff; color: #0c7bca; }
         .status.editing { background: #f0f2ff; color: #3c4ad9; }
-        .status.completed { background: #e9f8ee; color: #1a9b52; }
+        .status.completed { background: #e7f8ee; color: #1f9b55; }
         .status.revision { background: #fff0f2; color: #d62d50; }
-        .status.approved { background: #ecf8f3; color: #157f56; }
-        .status.cancelled { background: #fff0f0; color: #cc3a3a; }
+        .status.approved { background: #eaf6ff; color: #1f6fb5; }
+        .status.cancelled { background: #fde9e9; color: #c53030; }
         .writer-pay { font-weight: 800; color: #0f5951; white-space: nowrap; }
         .avatar {
             width: 34px; height: 34px; border-radius: 50%;
-            background: #edf3ff;
-            border: 1px solid #d9e7ff;
+            background: var(--accent-soft);
+            border: 1px solid #ffd7cd;
             display: grid; place-items: center;
-            font-weight: 800; color: #334568;
+            font-weight: 800; color: var(--accent);
         }
         @media (max-width: 1100px) {
             .layout { grid-template-columns: 1fr; }

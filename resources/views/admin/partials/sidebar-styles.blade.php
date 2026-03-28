@@ -108,6 +108,108 @@
             font-weight: 800;
             text-align: center;
         }
+        .content {
+            padding: 24px 28px 40px;
+            display: grid;
+            gap: 16px;
+            align-content: start;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+        }
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-weight: 900;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: none;
+        }
+        .btn:hover {
+            box-shadow: none;
+        }
+        .btn-primary {
+            background: var(--accent, #f25c3c);
+            color: #fff;
+        }
+        .btn-light {
+            background: #fff;
+            border: 1px solid var(--border, #e5e8ed);
+            color: #2f3236;
+        }
+        .btn-danger {
+            background: #c53030;
+            color: #fff;
+        }
+        .card,
+        .panel,
+        .table-card {
+            background: #fff;
+            border: 1px solid var(--border, #e5e8ed);
+            border-radius: 12px;
+            box-shadow: none;
+        }
+        .table-card {
+            overflow: hidden;
+        }
+        .table-head {
+            background: #fff;
+            border-bottom: 1px solid var(--border, #e5e8ed);
+        }
+        table {
+            background: #fff;
+        }
+        th,
+        td {
+            border-bottom: 1px solid var(--border, #e5e8ed);
+        }
+        th {
+            background: #fff7f3;
+            color: #2c2f33;
+        }
+        tbody tr:hover,
+        tr:hover {
+            background: #fffaf7;
+        }
+        input,
+        textarea,
+        select {
+            border: 1px solid var(--border, #e5e8ed);
+            border-radius: 12px;
+            background: #fff;
+        }
+        .hint,
+        .muted,
+        .summary-copy,
+        .panel-note {
+            color: var(--muted, #6b6b7a);
+        }
+        .chart-placeholder {
+            border-radius: 12px;
+            box-shadow: none;
+        }
+        .status.available,
+        .status.completed {
+            background: #e7f8ee;
+            color: #1f9b55;
+        }
+        .status.approved {
+            background: #eaf6ff;
+            color: #1f6fb5;
+        }
+        .status.cancelled {
+            background: #fde9e9;
+            color: #c53030;
+        }
         @media (max-width: 1100px) {
             .sidebar {
                 padding: 20px;
