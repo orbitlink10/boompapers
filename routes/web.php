@@ -2978,29 +2978,19 @@ Route::get('/admin/orders', function (\Illuminate\Http\Request $request) {
     }
 
     $orders = $orders
-        ->sort(function (array $left, array $right) use ($statusOrder) {
-            $leftStatus = $left['status'] ?? 'pending';
-            $rightStatus = $right['status'] ?? 'pending';
+        ->sort(function (array $left, array $right) {
+            $leftCreatedAt = strtotime((string) ($left['created_at'] ?? ''));
+            $rightCreatedAt = strtotime((string) ($right['created_at'] ?? ''));
 
-            $leftRank = $statusOrder[$leftStatus] ?? PHP_INT_MAX;
-            $rightRank = $statusOrder[$rightStatus] ?? PHP_INT_MAX;
-
-            if ($leftRank !== $rightRank) {
-                return $leftRank <=> $rightRank;
+            if ($leftCreatedAt !== false && $rightCreatedAt !== false && $leftCreatedAt !== $rightCreatedAt) {
+                return $rightCreatedAt <=> $leftCreatedAt;
             }
 
-            $leftDueAt = strtotime((string) ($left['due_at'] ?? ''));
-            $rightDueAt = strtotime((string) ($right['due_at'] ?? ''));
-
-            if ($leftDueAt !== false && $rightDueAt !== false && $leftDueAt !== $rightDueAt) {
-                return $leftDueAt <=> $rightDueAt;
-            }
-
-            if ($leftDueAt === false && $rightDueAt !== false) {
+            if ($leftCreatedAt === false && $rightCreatedAt !== false) {
                 return 1;
             }
 
-            if ($leftDueAt !== false && $rightDueAt === false) {
+            if ($leftCreatedAt !== false && $rightCreatedAt === false) {
                 return -1;
             }
 

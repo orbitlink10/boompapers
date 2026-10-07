@@ -237,8 +237,7 @@
 
     const deadlineCells = document.querySelectorAll('.deadline-live');
 
-    const formatRemainingDeadline = (diffMs) => {
-        const totalMinutes = Math.max(Math.floor(diffMs / 60000), 0);
+    const formatDuration = (totalMinutes) => {
         const days = Math.floor(totalMinutes / 1440);
         const hours = Math.floor((totalMinutes % 1440) / 60);
         const minutes = totalMinutes % 60;
@@ -250,6 +249,13 @@
             return hours + 'h ' + minutes + 'm';
         }
         return minutes + 'm';
+    };
+
+    const formatRemainingDeadline = (diffMs) => formatDuration(Math.max(Math.floor(diffMs / 60000), 0));
+
+    const formatLateDeadline = (diffMs) => {
+        const totalMinutes = Math.max(Math.floor(Math.abs(diffMs) / 60000), 1);
+        return '-' + formatDuration(totalMinutes);
     };
 
     const updateDeadlineCell = (cell) => {
@@ -268,7 +274,7 @@
         cell.title = 'Due ' + new Date(dueAtMs).toLocaleString();
 
         if (diffMs <= 0) {
-            cell.textContent = 'Expired';
+            cell.textContent = formatLateDeadline(diffMs);
             cell.classList.remove('deadline-urgent');
             cell.classList.add('deadline-expired');
             return;
